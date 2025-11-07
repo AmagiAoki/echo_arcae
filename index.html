@@ -4,149 +4,769 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>匣之回响</title>
-  <!-- 使用 Google Fonts 引入简洁优雅的字体 -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- 所有字体（通过 jsDelivr 加速） -->
+  <link href="https://fonts.googleapis.com/css2?family=Source+Han+Serif+SC:wght@400;600&family=LXGW+WenKai+Screen&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;600&family=Fira+Code&display=swap" rel="stylesheet">
+  <style id="theme-style"></style>
+  <style id="season-style"></style>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: 'Noto Serif SC', serif;
-      background: #f9f7f2;
-      color: #333;
+      font-family: var(--font-family, 'Source Han Serif SC');
       line-height: 1.7;
-      padding: 0;
+      transition: background-color 0.3s, color 0.3s;
+      --font-size: 1.05rem; /* 默认字号 */
     }
 
     /* === 加载动画 === */
     #loader {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #f9f7f2;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-      transition: opacity 0.4s ease;
-    }
-    #loader h2 {
-      font-size: 1.4rem;
-      margin-bottom: 1.2rem;
-      color: #6b6b6b;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9999; transition: opacity 0.4s ease;
     }
     .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #d0c8b8;
-      border-top: 3px solid #8a7f70;
+      width: 40px; height: 40px;
+      border: 3px solid;
+      border-top-color: transparent;
       border-radius: 50%;
       animation: spin 1.2s linear infinite;
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* 布局 */
+    #app { display: none; max-width: 1200px; margin: 0 auto; padding: 1.2rem; }
+    #app.grid { display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; }
+    @media (max-width: 768px) {
+      #app.grid { grid-template-columns: 1fr; }
+      #sidebar { order: 2; } #editor { order: 1; }
     }
 
-    /* === 主内容区 === */
-    #app {
-      display: none;
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 3rem 1.5rem;
+    /* 通用 */
+    .card { padding: 1.2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .btn {
+      padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; transition: transform 0.1s, background 0.2s;
+      position: relative; overflow: hidden; /* 波纹效果容器 */
     }
-    header h1 {
-      text-align: center;
-      font-size: 2.2rem;
-      margin-bottom: 2rem;
-      color: #4a4540;
-      letter-spacing: 2px;
+    .btn:hover { opacity: 0.9; }
+    .btn:active { transform: scale(0.98); }
+    .ripple {
+      position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4);
+      transform: scale(0); animation: ripple 0.6s linear;
+      pointer-events: none;
     }
-    textarea {
-      width: 100%;
-      min-height: 240px;
-      padding: 1.2rem;
-      font-family: 'Noto Serif SC', serif;
-      font-size: 1.05rem;
-      line-height: 1.7;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      resize: vertical;
-      background: #fff;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+    input, textarea { padding: 0.6rem; border-radius: 6px; border: 1px solid; font-family: inherit; font-size: var(--font-size); }
+    h2 { margin-bottom: 1rem; font-size: 1.2rem; }
+
+    /* 侧边栏 */
+    #noteList { list-style: none; max-height: 300px; overflow-y: auto; margin: 0.5rem 0; }
+    .note-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; cursor: pointer; border-radius: 4px; }
+    .note-item:hover { opacity: 0.9; }
+    .note-item.active { font-weight: 600; }
+    .note-actions { display: flex; gap: 0.3rem; }
+
+    /* 编辑区 */
+    #editor-header { margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; }
+    #currentTitle { font-size: 1.6rem; flex: 1; }
+    #previewToggle { padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.9rem; }
+    #previewContent { padding: 1.2rem; line-height: 1.7; display: none; font-size: var(--font-size); }
+    #previewContent code { background: var(--light); padding: 0.2rem 0.4rem; border-radius: 4px; }
+    #previewContent pre { background: var(--light); padding: 0.8rem; border-radius: 6px; overflow-x: auto; }
+    #previewContent blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; margin: 0.5rem 0; opacity: 0.8; }
+    #previewContent h1, #previewContent h2, #previewContent h3 { margin-top: 1.2rem; margin-bottom: 0.8rem; }
+    textarea#noteContent {
+      width: 100%; min-height: 350px; resize: vertical;
+      padding: 1.2rem; line-height: 1.7; font-size: var(--font-size);
     }
-    button {
-      margin-top: 1rem;
-      padding: 0.7rem 1.5rem;
-      font-family: 'Noto Serif SC', serif;
-      font-size: 1rem;
-      background: #e8e0d0;
-      color: #5a5245;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s;
+    #tagInput { width: 100%; margin-top: 0.5rem; }
+    .tag-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.9rem; margin: 0.2rem 0.3rem 0 0; }
+
+    /* 顶部工具栏 */
+    #toolbar {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.5rem;
     }
-    button:hover {
-      background: #dcd2bf;
-    }
-    #status {
-      margin-top: 1rem;
-      color: #888;
-      font-size: 0.95rem;
-    }
+    select { padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid; background: transparent; }
+    #fontSizeSlider { width: 80px; margin: 0 0.5rem; }
   </style>
 </head>
 <body>
 
-<!-- 加载屏 -->
 <div id="loader">
-  <h2>匣之回响</h2>
+  <h2 style="margin-bottom:1rem;font-size:1.5rem;">匣之回响</h2>
   <div class="spinner"></div>
 </div>
 
-<!-- 主应用 -->
+<div id="login" style="display:none;max-width:400px;margin:5rem auto;padding:2rem;" class="card">
+  <h2 style="text-align:center;margin-bottom:1.5rem;">匣之回响</h2>
+  <input type="text" id="username" placeholder="请输入你的名字" style="width:100%;margin:0.6rem 0;"/>
+  <button onclick="login()" class="btn" style="width:100%;">进入</button>
+</div>
+
 <div id="app">
-  <header>
-    <h1>匣之回响</h1>
-  </header>
-  <main>
-    <textarea id="note" placeholder="在这里写下你的回响…"></textarea>
-    <button onclick="saveNote()">💾 保存</button>
-    <p id="status"></p>
-  </main>
+  <div id="toolbar">
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;">
+      <button class="btn" onclick="toggleTheme()">🌓 日/夜</button>
+      <button class="btn" id="season-toggle" onclick="cycleSeason()">🍃 季节</button>
+      <select id="fontSelector" onchange="changeFont()">
+        <option value="Source Han Serif SC">思源宋体</option>
+        <option value="LXGW WenKai Screen">霞鹜文楷</option>
+        <option value="ZCOOL KuaiLe">站酷快乐体</option>
+        <option value="Noto Sans SC">Noto 无衬线</option>
+        <option value="Fira Code">Fira Code</option>
+      </select>
+      <!-- 字号滑块 -->
+      <label for="fontSizeSlider">字号: </label>
+      <input type="range" id="fontSizeSlider" min="12" max="24" value="17" oninput="changeFontSize(this.value)">
+      <span id="fontSizeDisplay">17px</span>
+      <button class="btn" onclick="importNotes()">📥 导入笔记</button>
+    </div>
+    <div>你好，<span id="userName"></span>（数据保存在本机）</div>
+  </div>
+
+  <div id="app" class="grid">
+    <div id="sidebar" class="card">
+      <h2>我的笔记</h2>
+      <input type="text" id="searchInput" placeholder="搜索笔记..." oninput="filterNotes()" style="width:100%;margin-bottom:0.8rem;"/>
+      <div id="tagFilter"></div>
+      <ul id="noteList"></ul>
+      <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+        <button class="btn" style="flex:1;" onclick="createNewNote()">+ 新笔记</button>
+        <button class="btn" style="flex:1;" onclick="exportAllNotes()">导出全部</button>
+      </div>
+    </div>
+
+    <div id="editor">
+      <div class="card">
+        <div id="editor-header">
+          <div id="currentTitle">未命名</div>
+          <button class="btn" id="previewToggle" onclick="togglePreview()">👁️ 预览</button>
+          <button class="btn" onclick="renameCurrentNote()">✏️ 重命名</button>
+        </div>
+        <textarea id="noteContent" placeholder="在这里写下你的回响…"></textarea>
+        <div id="previewContent"></div>
+        <input type="text" id="tagInput" placeholder="添加标签，如：#手帐 #灵感" onblur="addTags()"/>
+        <div id="tagDisplay"></div>
+        <div style="margin-top:1rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
+          <button class="btn" onclick="saveCurrentNote()">💾 保存</button>
+          <button class="btn" onclick="exportCurrentNote('md')">📥 .md</button>
+          <button class="btn" onclick="logout()">🚪 退出</button>
+        </div>
+        <p id="status" style="margin-top:0.8rem; font-size:0.9rem;"></p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-  // 保存到本地
-  function saveNote() {
-    const content = document.getElementById('note').value;
-    localStorage.setItem('box_resonance_note', content);
-    document.getElementById('status').innerText = '✅ 已保存到本地（关闭页面也不会丢失）';
-    setTimeout(() => {
-      document.getElementById('status').innerText = '';
-    }, 2000);
+  const STORAGE_KEY = 'box_resonance_v25';
+  let currentUser = null;
+  let currentNoteId = null;
+  let currentTheme = 'light';
+  let currentSeason = getSeason();
+  let currentFont = 'Source Han Serif SC';
+  let currentFontSize = 17; // 默认字号
+  let isPreviewMode = false;
+  let previewTimeout = null; // 用于防抖
+
+  // === 轻量级 Markdown 解析器（纯 JS，无需外部库）===
+  function simpleMarkdownParse(text) {
+    if (!text) return '';
+    let html = text
+      // 转义 HTML 标签
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+
+      // 标题
+      .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
+      .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
+      .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+
+      // 换行
+      .replace(/\n/g, '<br>')
+
+      // 粗体
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+
+      // 斜体
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+
+      // 代码块（行内）
+      .replace(/`(.*?)`/g, '<code>$1</code>')
+
+      // 无序列表
+      .replace(/^- (.*$)/gim, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+
+      // 有序列表
+      .replace(/^(\d+)\. (.*$)/gim, '<li value="$1">$2</li>')
+      .replace(/(<li value=".*">.*<\/li>)/gs, '<ol>$1</ol>')
+
+      // 引用
+      .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+    // 清理多余的换行和标签
+    html = html.replace(/<br><\/h[1-6]>/g, '</h$1>');
+    html = html.replace(/<br><\/blockquote>/g, '</blockquote>');
+    html = html.replace(/<br><\/ul>/g, '</ul>');
+    html = html.replace(/<br><\/ol>/g, '</ol>');
+    html = html.replace(/<br><\/li>/g, '</li>');
+    html = html.replace(/<br><\/code>/g, '</code>');
+    html = html.replace(/<br>/g, '<br />'); // 确保换行是自闭合标签
+    return html;
   }
 
-  // 页面加载时恢复内容
-  window.onload = function() {
-    const saved = localStorage.getItem('box_resonance_note');
-    if (saved) {
-      document.getElementById('note').value = saved;
-    }
+  const themes = {
+    light: { bg: '#f9f7f2', text: '#333', border: '#ddd', card: '#fff', primary: '#8a7f70', light: '#e8e0d0' },
+    dark: { bg: '#1e1e20', text: '#e6e1d9', border: '#444', card: '#2a2a2d', primary: '#b8a99a', light: '#3a3a3d' }
+  };
 
-    // 模拟加载完成（实际可等资源加载完）
+  const fonts = {
+    'Source Han Serif SC': "'Source Han Serif SC', serif",
+    'LXGW WenKai Screen': "'LXGW WenKai Screen', sans-serif",
+    'ZCOOL KuaiLe': "'ZCOOL KuaiLe', cursive",
+    'Noto Sans SC': "'Noto Sans SC', sans-serif",
+    'Fira Code': "'Fira Code', monospace"
+  };
+
+  function applyTheme() {
+    const t = themes[currentTheme];
+    const root = document.documentElement;
+    root.style.setProperty('--bg', t.bg);
+    root.style.setProperty('--text', t.text);
+    root.style.setProperty('--border', t.border);
+    root.style.setProperty('--card', t.card);
+    root.style.setProperty('--primary', t.primary);
+    root.style.setProperty('--light', t.light);
+    root.style.setProperty('--font-family', fonts[currentFont]);
+    root.style.setProperty('--font-size', currentFontSize + 'px');
+
+    // 主题样式
+    document.getElementById('theme-style').textContent = `
+      body { background: ${t.bg}; color: ${t.text}; }
+      .card { background: ${t.card}; border: 1px solid ${t.border}; }
+      input, textarea { background: ${t.card}; color: ${t.text}; border-color: ${t.border}; }
+      .btn { background: ${t.light}; color: ${t.primary}; }
+      .btn:hover { opacity: 0.9; }
+      .note-item.active { background: ${t.light}; color: ${t.primary}; }
+      .tag-badge { background: ${t.light}; color: ${t.text}; }
+      .spinner { border-color: ${t.border}; }
+      #loader { background: ${t.bg}; color: ${t.text}; }
+      #login { background: ${t.card}; color: ${t.text}; border: 1px solid ${t.border}; }
+    `;
+
+    // 季节样式（根据主题调整）
+    let seasonCSS = '';
+    if (currentSeason === 'spring') {
+      const bg = currentTheme === 'light' ? t.bg : '#2a2a2c';
+      seasonCSS = `
+        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#f0f7f4' : '#3a3a3c'} 100%); }
+        body::before {
+          content: "🌸"; position: fixed; opacity: 0.15; font-size: 20px;
+          animation: fall 12s infinite linear; animation-delay: 0s;
+          top: -20px; left: 10%; z-index: -1;
+        }
+        body::after {
+          content: "🌸"; position: fixed; opacity: 0.15; font-size: 18px;
+          animation: fall 15s infinite linear; animation-delay: 3s;
+          top: -18px; left: 60%; z-index: -1;
+        }
+        @keyframes fall {
+          to { transform: translateY(100vh) rotate(360deg); }
+        }
+      `;
+    } else if (currentSeason === 'summer') {
+      const bg = currentTheme === 'light' ? '#fffef7' : '#2a2a2a';
+      seasonCSS = `
+        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#fefdf6' : '#3a3a3a'} 100%); }
+        body::before {
+          content: "✨"; position: fixed; opacity: 0.1; font-size: 12px;
+          animation: float 8s infinite ease-in-out; animation-delay: 0s;
+          top: 20%; left: 20%; z-index: -1;
+        }
+        body::after {
+          content: "✨"; position: fixed; opacity: 0.1; font-size: 10px;
+          animation: float 10s infinite ease-in-out; animation-delay: 2s;
+          top: 60%; left: 70%; z-index: -1;
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0) translateX(0); }
+          25% { transform: translateY(-10px) translateX(5px); }
+          50% { transform: translateY(0) translateX(10px); }
+          75% { transform: translateY(5px) translateX(-5px); }
+        }
+      `;
+    } else if (currentSeason === 'autumn') {
+      const bg = currentTheme === 'light' ? '#fdf8f0' : '#2a2a28';
+      seasonCSS = `
+        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#f9f4ed' : '#3a3a38'} 100%); }
+        body::before {
+          content: "🍂"; position: fixed; opacity: 0.15; font-size: 24px;
+          animation: fall 15s infinite linear; animation-delay: 0s;
+          top: -30px; left: 20%; z-index: -1;
+        }
+        body::after {
+          content: "🍁"; position: fixed; opacity: 0.12; font-size: 22px;
+          animation: fall 18s infinite linear; animation-delay: 5s;
+          top: -28px; left: 70%; z-index: -1;
+        }
+        @keyframes fall {
+          to { transform: translateY(100vh) rotate(360deg); }
+        }
+      `;
+    } else if (currentSeason === 'winter') {
+      const bg = currentTheme === 'light' ? '#f8f9fa' : '#282a2a';
+      seasonCSS = `
+        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#eef2f7' : '#383a3a'} 100%); }
+        body::before {
+          content: "❄️"; position: fixed; opacity: 0.1; font-size: 16px;
+          animation: snow 10s infinite linear; animation-delay: 0s;
+          top: -20px; left: 40%; z-index: -1;
+        }
+        body::after {
+          content: "❅"; position: fixed; opacity: 0.08; font-size: 14px;
+          animation: snow 12s infinite linear; animation-delay: 4s;
+          top: -18px; left: 80%; z-index: -1;
+        }
+        @keyframes snow {
+          to { transform: translateY(100vh) rotate(180deg); }
+        }
+      `;
+    }
+    document.getElementById('season-style').textContent = seasonCSS;
+
+    // 保存状态
+    localStorage.setItem('box_resonance_theme', currentTheme);
+    localStorage.setItem('box_resonance_season', currentSeason);
+    localStorage.setItem('box_resonance_font', currentFont);
+    document.getElementById('season-toggle').textContent = `🍃 ${['春','夏','秋','冬']['spring,summer,autumn,winter'.split(',').indexOf(currentSeason)]}`;
+    document.getElementById('fontSelector').value = currentFont;
+  }
+
+  function getSeason() {
+    const month = new Date().getMonth() + 1;
+    if (month >= 3 && month <= 5) return 'spring';
+    if (month >= 6 && month <= 8) return 'summer';
+    if (month >= 9 && month <= 11) return 'autumn';
+    return 'winter';
+  }
+
+  function cycleSeason() {
+    const list = ['spring', 'summer', 'autumn', 'winter'];
+    const idx = list.indexOf(currentSeason);
+    currentSeason = list[(idx + 1) % 4];
+    applyTheme();
+  }
+
+  function toggleTheme() {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme();
+  }
+
+  function changeFont() {
+    currentFont = document.getElementById('fontSelector').value;
+    applyTheme();
+  }
+
+  function changeFontSize(size) {
+    currentFontSize = parseInt(size);
+    document.getElementById('fontSizeDisplay').textContent = size + 'px';
+    applyTheme(); // 重新应用 CSS 变量
+    localStorage.setItem('box_resonance_font_size', currentFontSize);
+  }
+
+  // === 波纹效果 ===
+  function addRippleEffect(e) {
+    const button = e.currentTarget;
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple';
+    const rect = button.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+    ripple.style.width = ripple.style.height = size + 'px';
+    ripple.style.left = x + 'px';
+    ripple.style.top = y + 'px';
+    button.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  }
+
+  document.querySelectorAll('.btn').forEach(btn => {
+    btn.addEventListener('click', addRippleEffect);
+  });
+
+  // === 登录 ===
+  function login() {
+    const name = document.getElementById('username').value?.trim();
+    if (!name) return alert('请输入名字');
+    currentUser = name;
+    localStorage.setItem('box_resonance_user', name);
+    document.getElementById('userName').textContent = name;
+    showApp();
+  }
+
+  function checkLogin() {
+    const saved = localStorage.getItem('box_resonance_user');
+    if (saved) {
+      currentUser = saved;
+      // 恢复字号
+      const savedSize = localStorage.getItem('box_resonance_font_size');
+      if (savedSize) currentFontSize = parseInt(savedSize);
+      document.getElementById('fontSizeSlider').value = currentFontSize;
+      document.getElementById('fontSizeDisplay').textContent = currentFontSize + 'px';
+      document.getElementById('userName').textContent = saved;
+      showApp();
+    } else {
+      document.getElementById('login').style.display = 'block';
+    }
+  }
+
+  function showApp() {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadNotes();
+  }
+
+  // === 笔记数据管理 ===
+  function getNotes() {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return data[currentUser] || { notes: {}, order: [] };
+  }
+
+  function saveNotes(notesData) {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    data[currentUser] = notesData;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  // === 笔记操作 ===
+  function createNewNote() {
+    const title = prompt('请输入笔记标题（留空则使用日期）：', getTodayDate());
+    const finalTitle = title !== null ? (title.trim() || getTodayDate()) : getTodayDate();
+    const id = Date.now().toString();
+    const notesData = getNotes();
+    notesData.notes[id] = {
+      title: finalTitle,
+      content: '',
+      tags: [],
+      createdAt: new Date().toISOString()
+    };
+    notesData.order.unshift(id);
+    saveNotes(notesData);
+    loadNotes();
+    openNote(id);
+  }
+
+  function deleteNote(id) {
+    if (!confirm('确定要删除这篇笔记吗？此操作无法撤销。')) return;
+    const notesData = getNotes();
+    delete notesData.notes[id];
+    notesData.order = notesData.order.filter(noteId => noteId !== id);
+    saveNotes(notesData);
+    if (currentNoteId === id) {
+        currentNoteId = notesData.order[0] || null;
+        if (currentNoteId) openNote(currentNoteId);
+        else {
+            document.getElementById('currentTitle').textContent = '未命名';
+            document.getElementById('noteContent').value = '';
+            document.getElementById('tagDisplay').innerHTML = '';
+        }
+    }
+    loadNotes();
+    showStatus('🗑️ 笔记已删除');
+  }
+
+  function renameCurrentNote() {
+    if (!currentNoteId) return;
+    const notesData = getNotes();
+    const note = notesData.notes[currentNoteId];
+    const newTitle = prompt('重命名笔记：', note.title);
+    if (newTitle !== null) {
+      note.title = newTitle.trim() || '未命名';
+      saveNotes(notesData);
+      loadNotes();
+      openNote(currentNoteId);
+    }
+  }
+
+  function openNote(id) {
+    const notesData = getNotes();
+    const note = notesData.notes[id];
+    if (!note) return;
+
+    currentNoteId = id;
+    document.getElementById('currentTitle').textContent = note.title || '未命名';
+    document.getElementById('noteContent').value = note.content || '';
+    renderTags(note.tags || []);
+    // 更新预览
+    if (isPreviewMode) {
+        updatePreview(note.content);
+    }
+    document.querySelectorAll('.note-item').forEach(el => el.classList.remove('active'));
+    const activeEl = [...document.querySelectorAll('.note-item')].find(el => el.dataset.id === id);
+    if (activeEl) activeEl.classList.add('active');
+  }
+
+  function saveCurrentNote() {
+    if (!currentNoteId) return;
+    const notesData = getNotes();
+    const note = notesData.notes[currentNoteId];
+    note.content = document.getElementById('noteContent').value;
+    saveNotes(notesData);
+    // 更新预览
+    if (isPreviewMode) {
+        updatePreview(note.content);
+    }
+    showStatus('✅ 已保存');
+  }
+
+  // === Markdown 预览（使用内置解析器）===
+  function updatePreview(content) {
+    if (!isPreviewMode) return;
+    const html = simpleMarkdownParse(content || '');
+    document.getElementById('previewContent').innerHTML = html;
+  }
+
+  function togglePreview() {
+    isPreviewMode = !isPreviewMode;
+    const contentEl = document.getElementById('noteContent');
+    const previewEl = document.getElementById('previewContent');
+    const toggleBtn = document.getElementById('previewToggle');
+    if (isPreviewMode) {
+        // 切换到预览
+        const content = contentEl.value;
+        updatePreview(content);
+        contentEl.style.display = 'none';
+        previewEl.style.display = 'block';
+        toggleBtn.textContent = '📝 编辑';
+    } else {
+        // 切换到编辑
+        contentEl.style.display = 'block';
+        previewEl.style.display = 'none';
+        toggleBtn.textContent = '👁️ 预览';
+    }
+  }
+
+  // === 标签系统 ===
+  function addTags() {
+    if (!currentNoteId) return;
+    const input = document.getElementById('tagInput');
+    const tags = input.value.split(/\s+/).filter(t => t.trim().startsWith('#')).map(t => t.trim());
+    const notesData = getNotes();
+    notesData.notes[currentNoteId].tags = [...new Set(tags)];
+    saveNotes(notesData);
+    renderTags(tags);
+    input.value = '';
+  }
+
+  function renderTags(tags) {
+    const el = document.getElementById('tagDisplay');
+    el.innerHTML = tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('');
+  }
+
+  // === 搜索与筛选 ===
+  function filterNotes() {
+    loadNotes();
+  }
+
+  // === 导出 ===
+  function exportCurrentNote(format) {
+    const content = document.getElementById('noteContent').value;
+    const title = document.getElementById('currentTitle').textContent;
+    let blob, filename;
+    if (format === 'md') {
+      blob = new Blob([content], { type: 'text/markdown' });
+      filename = (title || '未命名') + '.md';
+    } else {
+      blob = new Blob([content], { type: 'text/plain' });
+      filename = (title || '未命名') + '.txt';
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function exportAllNotes() {
+    const notesData = getNotes();
+    let text = `# 匣之回响 - 全部笔记导出\n\n`;
+    notesData.order.forEach(id => {
+      const note = notesData.notes[id];
+      text += `## ${note.title || '未命名'}\n`;
+      if (note.tags?.length) text += `标签: ${note.tags.join(' ')}\n\n`;
+      text += `${note.content}\n\n---\n\n`;
+    });
+    const blob = new Blob([text], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = '匣之回响_全部笔记.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // === 导入功能 ===
+  function importNotes() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.md,.txt';
+    input.onchange = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            const title = prompt('为导入的笔记设置标题：', file.name.replace(/\.(md|txt)$/, ''));
+            if (!title) return;
+            const id = Date.now().toString();
+            const notesData = getNotes();
+            notesData.notes[id] = {
+              title: title,
+              content: content,
+              tags: [],
+              createdAt: new Date().toISOString()
+            };
+            notesData.order.unshift(id);
+            saveNotes(notesData);
+            loadNotes();
+            openNote(id);
+            showStatus(`✅ 已导入笔记：${title}`);
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  // === 工具函数 ===
+  function getTodayDate() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function loadNotes() {
+    const notesData = getNotes();
+    const listEl = document.getElementById('noteList');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+
+    // 收集所有标签
+    const allTags = new Set();
+    Object.values(notesData.notes).forEach(note => {
+      (note.tags || []).forEach(tag => allTags.add(tag));
+    });
+
+    // 渲染标签筛选
+    const tagFilterEl = document.getElementById('tagFilter');
+    tagFilterEl.innerHTML = '<div style="margin-bottom:0.5rem;"><strong>标签筛选：</strong></div>';
+    allTags.forEach(tag => {
+      const btn = document.createElement('button');
+      btn.className = 'btn';
+      btn.style.fontSize = '0.8rem';
+      btn.style.padding = '0.2rem 0.6rem';
+      btn.textContent = tag;
+      btn.onclick = (e) => {
+        e.stopPropagation(); // 防止触发笔记打开
+        document.getElementById('searchInput').value = tag;
+        filterNotes();
+      };
+      tagFilterEl.appendChild(btn);
+    });
+
+    // 渲染笔记列表
+    listEl.innerHTML = '';
+    notesData.order.forEach(id => {
+      const note = notesData.notes[id];
+      if (!note) return;
+      const match = !search ||
+        note.title.toLowerCase().includes(search) ||
+        note.content.toLowerCase().includes(search) ||
+        (note.tags || []).some(t => t.includes(search));
+      if (!match) return;
+
+      const li = document.createElement('li');
+      li.className = 'note-item ' + (id === currentNoteId ? 'active' : '');
+      li.dataset.id = id;
+
+      const titleSpan = document.createElement('span');
+      titleSpan.textContent = note.title || '未命名';
+      titleSpan.onclick = () => openNote(id);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'note-actions';
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '🗑️';
+      deleteBtn.className = 'btn';
+      deleteBtn.style.padding = '0.2rem 0.4rem';
+      deleteBtn.style.fontSize = '0.8rem';
+      deleteBtn.onclick = (e) => { e.stopPropagation(); deleteNote(id); };
+      actionsDiv.appendChild(deleteBtn);
+
+      li.appendChild(titleSpan);
+      li.appendChild(actionsDiv);
+      listEl.appendChild(li);
+    });
+
+    if (!currentNoteId && notesData.order.length > 0) {
+      openNote(notesData.order[0]);
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    currentNoteId = null;
+    isPreviewMode = false;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'block';
+    document.getElementById('username').value = '';
+  }
+
+  function showStatus(msg) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    setTimeout(() => el.textContent = '', 2000);
+  }
+
+  // 自动保存 + 实时预览
+  document.addEventListener('DOMContentLoaded', () => {
+    const editor = document.getElementById('noteContent');
+    if (editor) {
+      editor.addEventListener('input', () => {
+        if (currentNoteId) {
+            // 防抖保存
+            clearTimeout(previewTimeout);
+            previewTimeout = setTimeout(() => {
+                saveCurrentNote();
+                if (isPreviewMode) {
+                    updatePreview(editor.value);
+                }
+            }, 300);
+        }
+      });
+    }
+  });
+
+  // === 初始化 ===
+  window.onload = () => {
+    currentTheme = localStorage.getItem('box_resonance_theme') || 'light';
+    currentSeason = localStorage.getItem('box_resonance_season') || getSeason();
+    currentFont = localStorage.getItem('box_resonance_font') || 'Source Han Serif SC';
+    const savedSize = localStorage.getItem('box_resonance_font_size');
+    if (savedSize) currentFontSize = parseInt(savedSize);
+    document.getElementById('fontSizeSlider').value = currentFontSize;
+    document.getElementById('fontSizeDisplay').textContent = currentFontSize + 'px';
+    applyTheme();
+
     setTimeout(() => {
       document.getElementById('loader').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loader').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
+        checkLogin();
       }, 400);
     }, 800);
   };
