@@ -1,64 +1,156 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>匣之回响  Gjenklang i esken</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>匣之回响</title>
+  <!-- 使用 Google Fonts 引入简洁优雅的字体 -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: "Ma Shan Zheng", cursive, sans-serif;
-      background: #fdf6f0;
-      color: #5a5a5a;
-      padding: 2rem;
-      line-height: 1.6;
+      font-family: 'Noto Serif SC', serif;
+      background: #f9f7f2;
+      color: #333;
+      line-height: 1.7;
+      padding: 0;
+    }
+
+    /* === 加载动画 === */
+    #loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #f9f7f2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.4s ease;
+    }
+    #loader h2 {
+      font-size: 1.4rem;
+      margin-bottom: 1.2rem;
+      color: #6b6b6b;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #d0c8b8;
+      border-top: 3px solid #8a7f70;
+      border-radius: 50%;
+      animation: spin 1.2s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* === 主内容区 === */
+    #app {
+      display: none;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    header h1 {
+      text-align: center;
+      font-size: 2.2rem;
+      margin-bottom: 2rem;
+      color: #4a4540;
+      letter-spacing: 2px;
     }
     textarea {
       width: 100%;
-      height: 200px;
-      font-size: 1.1rem;
-      border: 1px solid #ccc;
+      min-height: 240px;
+      padding: 1.2rem;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1.05rem;
+      line-height: 1.7;
+      border: 1px solid #ddd;
       border-radius: 8px;
-      padding: 1rem;
-      margin: 1rem 0;
+      resize: vertical;
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
     button {
-      margin: 0.5rem;
-      padding: 0.6rem 1.2rem;
+      margin-top: 1rem;
+      padding: 0.7rem 1.5rem;
+      font-family: 'Noto Serif SC', serif;
+      font-size: 1rem;
+      background: #e8e0d0;
+      color: #5a5245;
       border: none;
-      border-radius: 20px;
-      background: #f4d3c6;
-      color: #8b6b5c;
+      border-radius: 6px;
       cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #dcd2bf;
     }
     #status {
       margin-top: 1rem;
       color: #888;
+      font-size: 0.95rem;
     }
   </style>
 </head>
 <body>
-  <h1>泡茶中…</h1>
-  <textarea id="note" placeholder="今天想写点什么呢？比如：你收到了一个苹果，今晚梦见了玫瑰…"></textarea>
-  <br>
-  <button onclick="saveLocal()">💾 保存到本地</button>
-  <button onclick="setPublic()">🌐 设为公开</button>
-  <div id="status"></div>
 
-  <script>
-    // 从本地读取
-    document.getElementById('note').value = localStorage.getItem('myNote') || '';
+<!-- 加载屏 -->
+<div id="loader">
+  <h2>匣之回响</h2>
+  <div class="spinner"></div>
+</div>
 
-    function saveLocal() {
-      const content = document.getElementById('note').value;
-      localStorage.setItem('myNote', content);
-      document.getElementById('status').innerText = '✅ 已保存到本地（断网也不丢！）';
+<!-- 主应用 -->
+<div id="app">
+  <header>
+    <h1>匣之回响</h1>
+  </header>
+  <main>
+    <textarea id="note" placeholder="在这里写下你的回响…"></textarea>
+    <button onclick="saveNote()">💾 保存</button>
+    <p id="status"></p>
+  </main>
+</div>
+
+<script>
+  // 保存到本地
+  function saveNote() {
+    const content = document.getElementById('note').value;
+    localStorage.setItem('box_resonance_note', content);
+    document.getElementById('status').innerText = '✅ 已保存到本地（关闭页面也不会丢失）';
+    setTimeout(() => {
+      document.getElementById('status').innerText = '';
+    }, 2000);
+  }
+
+  // 页面加载时恢复内容
+  window.onload = function() {
+    const saved = localStorage.getItem('box_resonance_note');
+    if (saved) {
+      document.getElementById('note').value = saved;
     }
 
-    function setPublic() {
-      // 未来可改成上传到服务器，现在先存在本地标记
-      localStorage.setItem('publicNote', document.getElementById('note').value);
-      document.getElementById('status').innerText = '🌐 已设为公开（未来会展示在首页）';
-    }
-  </script>
+    // 模拟加载完成（实际可等资源加载完）
+    setTimeout(() => {
+      document.getElementById('loader').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+      }, 400);
+    }, 800);
+  };
+</script>
+
 </body>
 </html>
