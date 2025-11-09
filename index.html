@@ -3,986 +3,1172 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>匣之回响</title>
-  <!-- 所有字体（通过 jsDelivr 加速） -->
-  <link href="https://fonts.googleapis.com/css2?family=Source+Han+Serif+SC:wght@400;600&family=LXGW+WenKai+Screen&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;600&family=Fira+Code&display=swap" rel="stylesheet">
-  <style id="theme-style"></style>
-  <style id="season-style"></style>
+  <title>匣之回响 — 终极修复 v2.92</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Han+Serif+SC:wght@400;600&family=LXGW+WenKai+Screen&family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;600&family=Fira+Code&display=swap" rel="stylesheet">
+  <style id="dynamic-font"></style>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f9f7f2;
+      --text: #333;
+      --card: #fff;
+      --border: #ddd;
+      --primary: #8a7f70;
+      --light: #e8e0d0;
+      --font-family: 'Source Han Serif SC', serif;
+      --font-size: 16px;
+      --radius: 16px;
+      --slide-transition: transform 0.32s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
     body {
-      font-family: var(--font-family, 'Source Han Serif SC');
-      line-height: 1.7;
-      transition: background-color 0.3s, color 0.3s;
-      --font-size: 0.95rem;
+      font-family: var(--font-family);
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+      line-height: 1.7;
+      overflow-x: hidden;
+      position: relative;
     }
 
-    /* === 加载动画 === */
-    #loader {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 9999; transition: opacity 0.4s ease;
+    /* ========== 水波纹 ========== */
+    .ripple-btn {
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--light);
+      color: var(--primary);
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      min-width: 70px;
+      text-align: center;
+      font-size: 0.92rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      overflow: hidden;
+      position: relative;
     }
-    .spinner {
-      width: 40px; height: 40px;
-      border: 3px solid;
-      border-top-color: transparent;
-      border-radius: 50%;
-      animation: spin 1.2s linear infinite;
+    .ripple-btn:hover {
+      background: color-mix(in srgb, var(--light) 85%, var(--primary));
     }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-    /* 布局 - 修复重复ID问题 */
-    #app-container { display: none; max-width: 1200px; margin: 0 auto; padding: 0.8rem; width: 100%; }
-    #app-grid { display: grid; grid-template-columns: 0fr 1fr; gap: 0.5rem; transition: grid-template-columns 0.3s ease; }
-    #sidebar { min-width: 260px; height: calc(100vh - 100px); background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; }
-    #sidebar.hidden { min-width: 0; width: 0; padding: 0; overflow: hidden; transition: min-width 0.3s ease, padding 0.3s ease, width 0.3s ease; }
-
-    /* 修复：PC端侧边栏滑出效果 */
-    @media (min-width: 769px) {
-        #sidebar { transition: min-width 0.3s ease; }
-        #app-grid:not(.sidebar-hidden) { grid-template-columns: 260px 1fr; }
-    }
-    /* 修复：手机端侧边栏覆盖效果 */
-    #sidebar-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3);
-        z-index: 9998; display: none;
-    }
-    @media (max-width: 768px) {
-        #app-grid { grid-template-columns: 1fr; }
-        #sidebar { position: fixed; top: 0; left: -260px; z-index: 9999; height: 100vh; margin: 0; transition: left 0.3s ease; }
-        #sidebar.shown { left: 0; }
-        #sidebar.hidden { left: -260px; display: block; }
-        #editor { z-index: 9997; }
-    }
-
-    /* 通用 */
-    .card { padding: 1rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.3s ease; }
-    .btn {
-      padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; transition: transform 0.1s, background 0.2s, box-shadow 0.2s;
-      position: relative; overflow: hidden;
-    }
-    .btn:hover { opacity: 0.9; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
-    .btn:active { transform: scale(0.98); }
     .ripple {
-      position: absolute; border-radius: 50%; background: rgba(255,255,255,0.4);
-      transform: scale(0); animation: ripple 0.6s linear;
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.6);
+      transform: scale(0);
+      animation: ripple 0.6s linear;
       pointer-events: none;
     }
-    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+    @keyframes ripple {
+      to { transform: scale(4); opacity: 0; }
+    }
 
-    input, textarea { padding: 0.6rem; border-radius: 6px; border: 1px solid; font-family: inherit; font-size: var(--font-size); }
-    h2 { margin-bottom: 1rem; font-size: 1.2rem; }
+    /* ========== 高端加载动画 ========== */
+    #loader {
+      position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 24px;
+      background: linear-gradient(135deg, #f0f4f8, #e6e9f0);
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity 0.6s ease;
+    }
+    .loader-logo {
+      font-size: 2.8rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(20px) scale(0.9);
+      animation: fadeInUp 1.2s forwards 0.3s;
+      background: linear-gradient(120deg, #8a7f70, #5a5048);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .loader-dots {
+      display: flex;
+      gap: 8px;
+    }
+    .loader-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--primary);
+      opacity: 0;
+      animation: dotBounce 1.4s infinite ease-in-out;
+    }
+    .loader-dot:nth-child(2) { animation-delay: 0.14s; }
+    .loader-dot:nth-child(3) { animation-delay: 0.28s; }
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+      40% { transform: translateY(-16px); opacity: 1; }
+    }
 
-    /* 侧边栏 - 笔记卡片列表 */
-    #noteList { list-style: none; margin: 0.5rem 0; flex: 1; overflow-y: auto; }
-    .note-card { display: block; padding: 0.8rem; margin-bottom: 0.5rem; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
-    .note-card:hover { background: var(--light); }
-    .note-card.active { background: var(--light); font-weight: 600; }
-    .note-card-title { font-size: 1.1rem; margin-bottom: 0.3rem; }
-    .note-card-meta { font-size: 0.8rem; color: #888; display: flex; justify-content: space-between; }
+    .modal-backdrop {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.3); z-index: 998;
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.28s, visibility 0.28s;
+    }
+    .modal-backdrop.active {
+      opacity: 1; visibility: visible;
+    }
 
-    /* 侧边栏 - 标签筛选 */
-    #tagFilter { margin: 1rem 0; }
-    .tag-btn { display: inline-block; padding: 0.3rem 0.6rem; margin: 0.2rem; font-size: 0.85rem; border-radius: 12px; background: var(--light); cursor: pointer; transition: background 0.2s; }
-    .tag-btn.active { background: var(--primary); color: white; }
+    #top-bar {
+      position: sticky; top: 0; z-index: 997;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
 
-    /* 侧边栏 - 个人中心 */
-    #profileCard { margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border); }
-    #profileCard div { margin: 0.3rem 0; font-size: 0.9rem; }
+    #note-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      background: rgba(255,255,255,0.6);
+      cursor: pointer;
+    }
 
-    /* 编辑区 */
-    #editor { display: flex; flex-direction: column; }
-    #editor-header { margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; justify-content: space-between; flex-wrap: wrap; }
-    #currentTitle { font-size: 1.6rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    #previewToggle { padding: 0.3rem 0.8rem; border-radius: 6px; font-size: 0.9rem; margin-left: 0.5rem; }
-    #previewContent { padding: 1.2rem; line-height: 1.7; display: none; font-size: var(--font-size); flex: 1; }
-    #previewContent code { background: var(--light); padding: 0.2rem 0.4rem; border-radius: 4px; }
-    #previewContent pre { background: var(--light); padding: 0.8rem; border-radius: 6px; overflow-x: auto; }
-    #previewContent blockquote { border-left: 3px solid var(--primary); padding-left: 1rem; margin: 0.5rem 0; opacity: 0.8; }
-    #previewContent h1, #previewContent h2, #previewContent h3 { margin-top: 1.2rem; margin-bottom: 0.8rem; }
-    textarea#noteContent {
-      width: 100%; flex: 1;
-      min-height: 300px;
-      max-height: none;
-      padding: 1.2rem; line-height: 1.7; font-size: var(--font-size);
-      border-radius: 8px;
+    /* ========== 侧边栏滑动 ========== */
+    #sidebar, #detailPanel {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border);
-      resize: vertical;
+      border-radius: var(--radius);
+      padding: 16px;
+      height: 100vh;
+      overflow: auto;
+      position: fixed;
+      top: 0;
+      z-index: 1000;
+      transition: var(--slide-transition);
+      width: 92vw;
+      max-width: 340px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
     }
-    #tagInput { width: 100%; margin-top: 0.5rem; }
-    .tag-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.9rem; margin: 0.2rem 0.3rem 0 0; }
+    #sidebar { left: 0; transform: translateX(-100%); }
+    #sidebar.shown { transform: translateX(0); }
+    #detailPanel { right: 0; transform: translateX(100%); }
+    #detailPanel.shown { transform: translateX(0); }
 
-    /* 顶部工具栏 */
-    #toolbar {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
-    }
-    #searchContainer { display: flex; align-items: center; flex: 1; min-width: 100px; }
-    #searchInput { flex: 1; margin-right: 0.3rem; }
-    #clearSearchBtn { padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; }
-    select { padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid; background: transparent; }
-    @media (max-width: 768px) {
-        #toolbar { flex-direction: row; align-items: center; }
-        #toolbar > div:first-child { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        #clearSearchBtn {
-            display: block;
-            margin-left: 0.3rem;
-        }
-    }
-
-    /* 设置面板 */
-    #settings-panel {
-        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-        padding: 1.5rem; z-index: 10000; display: none; width: 320px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    }
-    #settings-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5);
-        z-index: 9999; display: none;
+    #app-container {
+      display: none;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+      padding-top: 80px;
     }
 
-    /* 优化：笔记卡片悬停和点击效果 */
+    #editor {
+      min-height: 60vh;
+    }
+
+    #writing-area {
+      position: relative;
+    }
+
+    #noteContent, #previewContent {
+      width: 100%;
+      min-height: 360px;
+      padding: 20px;
+      font-size: var(--font-size);
+      font-family: var(--font-family);
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-break: break-word;
+      caret-color: var(--primary);
+    }
+
+    #noteContent {
+      outline: none;
+      background: transparent;
+      border: none;
+    }
+
+    #previewContent {
+      display: none;
+      overflow: auto;
+      background: transparent;
+    }
+
+    #sidebar-footer {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(255,255,255,0.75);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      padding: 12px;
+      z-index: 1;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    }
+
+    input[type="text"] {
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    .muted { color: color-mix(in srgb, var(--text) 60%, transparent); font-size: 0.9rem; }
+
+    /* ========== 标签 ========== */
+    .tag-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 14px;
+      margin: 4px 6px 4px 0;
+      background: transparent;
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      font-weight: 500;
+    }
+    .tag-btn:hover {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--light) 40%, transparent);
+    }
+    .tag-btn.active {
+      background: var(--primary);
+      color: white !important;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(138, 127, 112, 0.25);
+      transform: translateY(-1px);
+    }
+
+    /* ========== 笔记卡片 ========== */
     .note-card {
-      transition: all 0.2s ease;
-      transform: translateX(0);
+      position: relative;
+      padding: 16px;
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      cursor: pointer;
+      background: var(--card);
+      border: 1px solid var(--border);
+      transition: all 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      opacity: 0;
+      transform: translateY(10px);
+      animation: cardSlideIn 0.4s forwards;
+    }
+    @keyframes cardSlideIn {
+      to { opacity: 1; transform: translateY(0); }
     }
     .note-card:hover {
-      transform: translateX(3px);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+      border-color: color-mix(in srgb, var(--border) 70%, var(--primary));
     }
-    .note-card:active {
-      transform: translateX(1px);
+    .note-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(138, 127, 112, 0.15);
     }
 
-    /* 优化：标签点击区域 */
-    .tag-btn {
-      user-select: none;
-      touch-action: manipulation;
+    /* ========== 预览模式 ========== */
+    #previewContent h1, #previewContent h2, #previewContent h3, #previewContent h4, #previewContent h5, #previewContent h6 {
+      margin: 1.2em 0 0.5em;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    #previewContent h1 { font-size: 2rem; }
+    #previewContent h2 { font-size: 1.5rem; }
+    #previewContent h3 { font-size: 1.25rem; }
+    #previewContent h4 { font-size: 1.1rem; }
+    #previewContent h5 { font-size: 1rem; }
+    #previewContent h6 { font-size: 0.9rem; }
+    #previewContent strong { font-weight: bold; }
+    #previewContent em { font-style: italic; }
+    #previewContent code {
+      font-family: monospace;
+      background: var(--light);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    #previewContent del { text-decoration: line-through; }
+    #previewContent hr {
+      border: 0;
+      border-top: 1px solid var(--border);
+      margin: 1.5em 0;
+    }
+    #previewContent p { margin: 0.5em 0; }
+    #previewContent ul, #previewContent ol {
+      margin: 0.5em 0 0.5em 1.5em;
+      padding: 0;
+    }
+    #previewContent li { margin: 0.2em 0; }
+
+    /* ========== 保存提示 ========== */
+    .save-toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    .save-toast.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ========== ✨ 液态玻璃皮肤（iOS 控制中心风格） ========== */
+    body[skin="glass"] {
+      --bg: linear-gradient(135deg, #f8fbff, #f0f4fa);
+      --text: #2c3e50;
+      --card: rgba(255, 255, 255, 0.7);
+      --border: rgba(200, 210, 230, 0.5);
+      --primary: #5a8dde;
+      --light: rgba(230, 240, 255, 0.6);
+    }
+    body[skin="glass"] #top-bar,
+    body[skin="glass"] #sidebar,
+    body[skin="glass"] #detailPanel,
+    body[sky="glass"] #sidebar-footer {
+      background: rgba(255, 255, 255, 0.65);
+      border-color: rgba(200, 210, 230, 0.5);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 8px 32px rgba(90, 141, 222, 0.08);
+    }
+    body[skin="glass"] .note-card {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(200, 210, 230, 0.5);
+    }
+    body[skin="glass"] .tag-btn {
+      border-color: rgba(200, 210, 230, 0.6);
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 2px 8px rgba(90, 141, 222, 0.05);
+    }
+    body[skin="glass"] .tag-btn.active {
+      background: var(--primary);
+      color: white !important;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(90, 141, 222, 0.22);
+    }
+    body[skin="glass"] .ripple-btn {
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(200, 210, 230, 0.5);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 2px 8px rgba(90, 141, 222, 0.05);
+      color: var(--text);
+    }
+    body[skin="glass"] .ripple-btn:hover {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: var(--primary);
+    }
+
+    /* ========== 夜 · 墨色 ========== */
+    body[skin="dark"] {
+      --bg: #1e1e20;
+      --text: #e6e1d9;
+      --card: #2a2a2d;
+      --border: #444;
+      --primary: #b8a99a;
+      --light: #3a3a3f;
+    }
+    body[skin="dark"] #top-bar,
+    body[skin="dark"] #sidebar,
+    body[skin="dark"] #detailPanel,
+    body[skin="dark"] #sidebar-footer {
+      background: rgba(42, 42, 45, 0.92);
+      border-color: #444;
+      color: #e6e1d9;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    body[skin="dark"] input[type="text"] {
+      background: #2a2a2d;
+      color: #e6e1d9;
+      border-color: #555;
+    }
+    body[skin="dark"] .muted {
+      color: #aaa;
+    }
+    body[skin="dark"] #noteContent,
+    body[skin="dark"] #previewContent {
+      color: #e6e1d9;
+    }
+    body[skin="dark"] .ripple {
+      background: rgba(0, 0, 0, 0.4);
+    }
+    body[skin="dark"] #loader {
+      background: #1e1e20;
+    }
+    body[skin="dark"] .loader-logo,
+    body[skin="dark"] .loader-dot {
+      background: linear-gradient(120deg, #b8a99a, #9a8b7a);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* ========== 详情面板 ========== */
+    #detailPanel .detail-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    #detailPanel .detail-section h4 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    #detailPanel .detail-row {
+      margin: 8px 0;
+      display: flex;
+      align-items: flex-start;
+    }
+    #detailPanel .detail-label {
+      font-weight: 600;
+      min-width: 80px;
+      color: var(--text);
+    }
+    #detailPanel .detail-value {
+      flex: 1;
+      word-break: break-all;
+      color: var(--text);
+    }
+
+    @media (max-width: 980px) {
+      #top-bar { padding: 10px 16px; }
+      .ripple-btn { min-width: 60px; padding: 8px 12px; font-size: 0.88rem; }
+      #note-title { font-size: 1.2rem; }
     }
   </style>
 </head>
 <body>
-
-<div id="loader">
-  <h2 style="margin-bottom:1rem;font-size:1.5rem;">匣之回响</h2>
-  <div class="spinner"></div>
-</div>
-
-<div id="settings-overlay" onclick="closeSettings()"></div>
-<div id="settings-panel" class="card">
-  <h3>设置</h3>
-  <div style="margin: 1rem 0;">
-    <label for="fontSelector">字体: </label>
-    <select id="fontSelector" onchange="changeFont()" style="width:100%; margin: 0.5rem 0;">
-      <option value="Source Han Serif SC">思源宋体</option>
-      <option value="LXGW WenKai Screen">霞鹜文楷</option>
-      <option value="ZCOOL KuaiLe">站酷快乐体</option>
-      <option value="Noto Sans SC">Noto 无衬线</option>
-      <option value="Fira Code">Fira Code</option>
-    </select>
+<div id="loader" aria-hidden="false">
+  <div class="loader-logo">匣之回响</div>
+  <div class="loader-dots">
+    <div class="loader-dot"></div>
+    <div class="loader-dot"></div>
+    <div class="loader-dot"></div>
   </div>
-  <div style="margin: 1rem 0;">
-    <button class="btn" onclick="toggleTheme()">🌓 日/夜</button>
-    <button class="btn" onclick="cycleSeason()">🍃 季节</button>
+</div>
+
+<div class="modal-backdrop" id="sidebarBackdrop"></div>
+<div class="modal-backdrop" id="detailBackdrop"></div>
+<div class="modal-backdrop" id="skinBackdrop"></div>
+<div class="modal-backdrop" id="fontBackdrop"></div>
+
+<div id="skinModal" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.95);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;z-index:2000;opacity:0;visibility:hidden;transition:all 0.3s;max-width:90vw;width:500px;box-shadow:0 20px 50px rgba(0,0,0,0.15);">
+  <h3 style="margin-bottom:20px;text-align:center">🎨 皮肤</h3>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+    <div class="skin-opt ripple-btn" data-skin="default" style="min-width:auto;padding:16px;"><div style="height:60px;border-radius:10px;background:#f9f7f2;color:#333;display:flex;align-items:center;justify-content:center;font-weight:bold;">经典 · 纸笺</div></div>
+    <div class="skin-opt ripple-btn" data-skin="spring" style="min-width:auto;padding:16px;"><div style="height:60px;border-radius:10px;background:#f8f0e5;color:#5a4a42;display:flex;align-items:center;justify-content:center;font-weight:bold;">春 · 樱粉</div></div>
+    <div class="skin-opt ripple-btn" data-skin="summer" style="min-width:auto;padding:16px;"><div style="height:60px;border-radius:10px;background:#eef7f0;color:#2c5f2d;display:flex;align-items:center;justify-content:center;font-weight:bold;">夏 · 荷绿</div></div>
+    <div class="skin-opt ripple-btn" data-skin="autumn" style="min-width:auto;padding:16px;"><div style="height:60px;border-radius:10px;background:#fef2e9;color:#8b4513;display:flex;align-items:center;justify-content:center;font-weight:bold;">秋 · 枫橙</div></div>
+    <div class="skin-opt ripple-btn" data-skin="winter" style="min-width:auto;padding:16px;"><div style="height:60px;border-radius:10px;background:#f0f4f8;color:#2c3e50;display:flex;align-items:center;justify-content:center;font-weight:bold;">冬 · 雪蓝</div></div>
+    <div class="skin-opt ripple-btn" data-skin="dark" style="min-width:auto;padding:16px;"><div style="height:60px;border-radius:10px;background:#1e1e20;color:#e6e1d9;display:flex;align-items:center;justify-content:center;font-weight:bold;">夜 · 墨色</div></div>
+    <div class="skin-opt ripple-btn" data-skin="glass" style="min-width:auto;padding:16px;"><div style="height:60px;border-radius:10px;background:linear-gradient(135deg, #f8fbff, #f0f4fa);color:#2c3e50;display:flex;align-items:center;justify-content:center;font-weight:bold;box-shadow:0 4px 12px rgba(90,141,222,0.2);">✨ 液态玻璃</div></div>
   </div>
-  <button class="btn" onclick="closeSettings()">关闭</button>
 </div>
 
-<div id="login" style="display:none;max-width:400px;margin:5rem auto;padding:2rem;" class="card">
-  <h2 style="text-align:center;margin-bottom:1.5rem;">匣之回响</h2>
-  <input type="text" id="username" placeholder="请输入你的名字" style="width:100%;margin:0.6rem 0;"/>
-  <button onclick="login()" class="btn" style="width:100%;">进入</button>
+<div id="fontModal" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.95);background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;z-index:2000;opacity:0;visibility:hidden;transition:all 0.3s;max-width:90vw;width:500px;box-shadow:0 20px 50px rgba(0,0,0,0.15);">
+  <h3 style="margin-bottom:20px;text-align:center">✒️ 字体</h3>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+    <div class="font-opt ripple-btn" data-font="'Source Han Serif SC', serif" style="min-width:auto;padding:16px;"><div style="height:60px;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;font-family:'Source Han Serif SC';">思源宋体</div></div>
+    <div class="font-opt ripple-btn" data-font="'LXGW WenKai Screen', sans-serif" style="min-width:auto;padding:16px;"><div style="height:60px;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;font-family:'LXGW WenKai Screen';">霞鹜文楷</div></div>
+    <div class="font-opt ripple-btn" data-font="'ZCOOL KuaiLe', cursive" style="min-width:auto;padding:16px;"><div style="height:60px;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;font-family:'ZCOOL KuaiLe';">快乐体</div></div>
+    <div class="font-opt ripple-btn" data-font="'Noto Sans SC', sans-serif" style="min-width:auto;padding:16px;"><div style="height:60px;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;font-family:'Noto Sans SC';">Noto Sans</div></div>
+    <div class="font-opt ripple-btn" data-font="'Fira Code', monospace" style="min-width:auto;padding:16px;"><div style="height:60px;background:var(--card);color:var(--text);display:flex;align-items:center;justify-content:center;font-family:'Fira Code';">Fira Code</div></div>
+  </div>
 </div>
 
-<!-- 手机端侧边栏遮罩 -->
-<div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+<div id="top-bar">
+  <button class="ripple-btn" id="dirBtn">📁 目录</button>
+  <div id="note-title">未命名</div>
+  <div style="display:flex;gap:8px;">
+    <button class="ripple-btn" id="saveBtn">💾 保存</button>
+    <button class="ripple-btn" id="detailBtn">ℹ️ 详情</button>
+  </div>
+</div>
 
 <div id="app-container">
-  <div id="toolbar">
-    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center; flex: 1;">
-      <button class="btn" onclick="toggleSidebar()">📁 目录</button>
-      <button class="btn" onclick="openSettings()">⚙️ 设置</button>
-      <div id="searchContainer">
-        <input type="text" id="searchInput" placeholder="搜索笔记..." oninput="filterNotes()" />
-        <button class="btn" id="clearSearchBtn" onclick="clearSearch()">❌</button>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:0.5rem;">
-        <button class="btn" onclick="createNewNote()">+ 新笔记</button>
-        <div>你好，<span id="userName"></span>（数据保存在本机）</div>
-    </div>
-  </div>
-
-  <div id="app-grid" class="grid sidebar-hidden">
-    <div id="sidebar" class="hidden">
+  <div id="main-area">
+    <aside id="sidebar" aria-hidden="true">
       <h2>我的笔记</h2>
-      <div id="tagFilter"></div>
+      <div id="tagFilter"><strong class="muted">标签：</strong></div>
       <ul id="noteList"></ul>
-      <div style="margin-top:1rem; display:flex; gap:0.5rem;">
-        <button class="btn" style="flex:1;" onclick="exportAllNotes()">导出全部</button>
-        <button class="btn" style="flex:1;" onclick="importNotes()">📥 导入</button>
+      <div id="sidebar-footer">
+        <div class="muted">用户：<span id="profileName">访客</span></div>
+        <div class="muted">笔记数：<span id="noteCount">0</span></div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="ripple-btn" id="skinBtn" style="padding:6px 10px;font-size:0.85rem;min-width:auto;">🎨 皮肤</button>
+          <button class="ripple-btn" id="fontBtn" style="padding:6px 10px;font-size:0.85rem;min-width:auto;">✒️ 字体</button>
+          <button class="ripple-btn" id="newNoteBtn" style="padding:6px 10px;font-size:0.85rem;min-width:auto;">+ 新笔记</button>
+          <button class="ripple-btn" id="importBtn" style="padding:6px 10px;font-size:0.85rem;min-width:auto;">↑ 导入</button>
+          <button class="ripple-btn" id="logoutBtn" style="padding:6px 10px;font-size:0.85rem;min-width:auto;">退出</button>
+        </div>
       </div>
-      <div id="profileCard">
-        <div>用户: <span id="profileName"></span></div>
-        <div>笔记数: <span id="noteCount">0</span></div>
-        <button class="btn" style="width:100%; margin-top: 0.5rem;" onclick="logout()">🚪 退出</button>
-      </div>
-    </div>
+    </aside>
 
-    <div id="editor">
-      <div class="card" style="display: flex; flex-direction: column; flex: 1;">
-        <div id="editor-header">
-          <div id="currentTitle">未命名</div>
-          <div style="display: flex; gap: 0.5rem;">
-            <button class="btn" id="previewToggle" onclick="togglePreview()">👁️ 预览</button>
-            <button class="btn" onclick="renameCurrentNote()">✏️ 重命名</button>
-            <button class="btn" onclick="deleteCurrentNote()">🗑️ 删除</button> <!-- 新增删除按钮 -->
+    <section id="editor">
+      <div id="writing-area">
+        <div id="noteContent" contenteditable="true" placeholder="在这里写下你的回响…"></div>
+        <div id="previewContent"></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="tagInput" placeholder="#灵感 #学习（失去焦点自动添加）" style="flex:1;min-width:200px;" />
+        <button class="ripple-btn" id="exportMdBtn">📥 .md</button>
+      </div>
+      <div id="tagDisplay" style="margin-top:14px"></div>
+      <p id="status" style="font-size:0.92rem;color:var(--text);opacity:0.8;text-align:center;margin-top:12px;"></p>
+    </section>
+
+    <aside id="detailPanel" aria-hidden="true">
+      <button class="ripple-btn" id="closeDetail" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:1.5rem;color:var(--text);opacity:0.7;width:32px;height:32px;display:flex;align-items:center;justify-content:center;padding:0;">×</button>
+      <h3>笔记详情</h3>
+      <div class="detail-section">
+        <h4>📝 基本信息</h4>
+        <div class="detail-row">
+          <span class="detail-label">标题：</span>
+          <span id="detailTitle" class="detail-value">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">字数：</span>
+          <span id="detailWords" class="detail-value">0</span>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>🕒 时间记录</h4>
+        <div class="detail-row">
+          <span class="detail-label">创建：</span>
+          <span id="detailCreated" class="detail-value">—</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">最后修改：</span>
+          <span id="detailUpdated" class="detail-value">—</span>
+        </div>
+      </div>
+      <div class="detail-section">
+        <h4>🏷️ 标签与操作</h4>
+        <div class="detail-row">
+          <span class="detail-label">标签：</span>
+          <span id="detailTags" class="detail-value">—</span>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="ripple-btn" id="exportNoteBtn">导出笔记</button>
+          <button class="ripple-btn" id="copyBtn">复制内容</button>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+          <div class="muted">快速操作</div>
+          <div style="display:flex;gap:10px;margin-top:10px;">
+            <button class="ripple-btn" id="pinBtn">📌 置顶</button>
+            <button class="ripple-btn" id="duplicateBtn">🔁 复制</button>
           </div>
         </div>
-        <textarea id="noteContent" placeholder="在这里写下你的回响…" style="flex: 1;"></textarea>
-        <div id="previewContent"></div>
-        <input type="text" id="tagInput" placeholder="添加标签，如：#手帐 #灵感" onblur="addTags()"/>
-        <div id="tagDisplay"></div>
-        <div style="margin-top:1rem; display:flex; gap:0.6rem; flex-wrap:wrap;">
-          <button class="btn" onclick="saveCurrentNote()">💾 保存</button>
-          <button class="btn" onclick="exportCurrentNote('md')">📥 .md</button>
-        </div>
-        <p id="status" style="margin-top:0.8rem; font-size:0.9rem; color: #888;"></p>
       </div>
-    </div>
+    </aside>
   </div>
 </div>
 
+<div id="login" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10000;background:var(--card);border:1px solid var(--border);padding:24px;border-radius:var(--radius);box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+  <h2 style="margin-bottom:12px">匣之回响</h2>
+  <input id="username" placeholder="请输入你的名字" style="width:280px;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border)" />
+  <div style="margin-top:14px;display:flex;gap:10px;">
+    <button class="ripple-btn" id="loginBtn">进入</button>
+  </div>
+</div>
+
+<div class="save-toast" id="saveToast">已保存</div>
+
 <script>
-  const STORAGE_KEY = 'box_resonance_v273';
-  let currentUser = null;
-  let currentNoteId = null;
-  let currentTheme = 'light';
-  let currentSeason = getSeason();
-  let currentFont = 'Source Han Serif SC';
-  let currentFontSize = 17;
-  let isPreviewMode = false;
-  let previewTimeout = null;
-  let isSidebarVisible = false;
-  let activeFilterTag = null;
-
-  // 轻量级 Markdown 解析器
-  function simpleMarkdownParse(text) {
-    if (!text) return '';
-    let html = text
-      // 转义 HTML 标签
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-
-      // 标题
-      .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
-      .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
-      .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
-      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-
-      // 换行
-      .replace(/\n/g, '<br>')
-
-      // 粗体
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/__(.*?)__/g, '<strong>$1</strong>')
-
-      // 斜体
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
-
-      // 代码块（行内）
-      .replace(/`(.*?)`/g, '<code>$1</code>')
-
-      // 无序列表
-      .replace(/^- (.*$)/gim, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-
-      // 有序列表
-      .replace(/^(\d+)\. (.*$)/gim, '<li value="$1">$2</li>')
-      .replace(/(<li value=".*">.*<\/li>)/gs, '<ol>$1</ol>')
-
-      // 引用
-      .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
-
-    // 清理多余的换行和标签
-    html = html.replace(/<br><\/h[1-6]>/g, '</h$1>');
-    html = html.replace(/<br><\/blockquote>/g, '</blockquote>');
-    html = html.replace(/<br><\/ul>/g, '</ul>');
-    html = html.replace(/<br><\/ol>/g, '</ol>');
-    html = html.replace(/<br><\/li>/g, '</li>');
-    html = html.replace(/<br><\/code>/g, '</code>');
-    html = html.replace(/<br>/g, '<br />');
-    return html;
-  }
-
-  const themes = {
-    light: { bg: '#f9f7f2', text: '#333', border: '#ddd', card: '#fff', primary: '#8a7f70', light: '#e8e0d0' },
-    dark: { bg: '#1e1e20', text: '#e6e1d9', border: '#444', card: '#2a2a2d', primary: '#b8a99a', light: '#3a3a3d' }
-  };
-
-  const fonts = {
-    'Source Han Serif SC': "'Source Han Serif SC', serif",
-    'LXGW WenKai Screen': "'LXGW WenKai Screen', sans-serif",
-    'ZCOOL KuaiLe': "'ZCOOL KuaiLe', cursive",
-    'Noto Sans SC': "'Noto Sans SC', sans-serif",
-    'Fira Code': "'Fira Code', monospace"
-  };
-
-  function applyTheme() {
-    const t = themes[currentTheme];
-    const root = document.documentElement;
-
-    // 设置 CSS 变量
-    root.style.setProperty('--bg', t.bg);
-    root.style.setProperty('--text', t.text);
-    root.style.setProperty('--border', t.border);
-    root.style.setProperty('--card', t.card);
-    root.style.setProperty('--primary', t.primary);
-    root.style.setProperty('--light', t.light);
-    root.style.setProperty('--font-family', fonts[currentFont]);
-    root.style.setProperty('--font-size', currentFontSize + 'px');
-
-    // 主题样式
-    document.getElementById('theme-style').textContent = `
-      body { background: ${t.bg}; color: ${t.text}; }
-      .card { background: ${t.card}; border: 1px solid ${t.border}; }
-      input, textarea { background: ${t.card}; color: ${t.text}; border-color: ${t.border}; }
-      .btn { background: ${t.light}; color: ${t.primary}; }
-      .btn:hover { opacity: 0.9; }
-      .note-card.active { background: ${t.light}; color: ${t.primary}; }
-      .tag-badge { background: ${t.light}; color: ${t.text}; }
-      .tag-btn { background: ${t.light}; color: ${t.text}; }
-      .tag-btn.active { background: ${t.primary}; color: white; }
-      .spinner { border-color: ${t.border}; }
-      #loader { background: ${t.bg}; color: ${t.text}; }
-      #login { background: ${t.card}; color: ${t.text}; border: 1px solid ${t.border}; }
-    `;
-
-    // 季节样式
-    let seasonCSS = '';
-    if (currentSeason === 'spring') {
-      const bg = currentTheme === 'light' ? t.bg : '#2a2a2c';
-      seasonCSS = `
-        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#f0f7f4' : '#3a3a3c'} 100%); }
-        body::before {
-          content: "🌸"; position: fixed; opacity: 0.15; font-size: 20px;
-          animation: fall 12s infinite linear; animation-delay: 0s;
-          top: -20px; left: 10%; z-index: -1;
-        }
-        body::after {
-          content: "🌸"; position: fixed; opacity: 0.15; font-size: 18px;
-          animation: fall 15s infinite linear; animation-delay: 3s;
-          top: -18px; left: 60%; z-index: -1;
-        }
-        @keyframes fall {
-          to { transform: translateY(100vh) rotate(360deg); }
-        }
-      `;
-    } else if (currentSeason === 'summer') {
-      const bg = currentTheme === 'light' ? '#fffef7' : '#2a2a2a';
-      seasonCSS = `
-        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#fefdf6' : '#3a3a3a'} 100%); }
-        body::before {
-          content: "✨"; position: fixed; opacity: 0.1; font-size: 12px;
-          animation: float 8s infinite ease-in-out; animation-delay: 0s;
-          top: 20%; left: 20%; z-index: -1;
-        }
-        body::after {
-          content: "✨"; position: fixed; opacity: 0.1; font-size: 10px;
-          animation: float 10s infinite ease-in-out; animation-delay: 2s;
-          top: 60%; left: 70%; z-index: -1;
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0) translateX(0); }
-          25% { transform: translateY(-10px) translateX(5px); }
-          50% { transform: translateY(0) translateX(10px); }
-          75% { transform: translateY(5px) translateX(-5px); }
-        }
-      `;
-    } else if (currentSeason === 'autumn') {
-      const bg = currentTheme === 'light' ? '#fdf8f0' : '#2a2a28';
-      seasonCSS = `
-        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#f9f4ed' : '#3a3a38'} 100%); }
-        body::before {
-          content: "🍂"; position: fixed; opacity: 0.15; font-size: 24px;
-          animation: fall 15s infinite linear; animation-delay: 0s;
-          top: -30px; left: 20%; z-index: -1;
-        }
-        body::after {
-          content: "🍁"; position: fixed; opacity: 0.12; font-size: 22px;
-          animation: fall 18s infinite linear; animation-delay: 5s;
-          top: -28px; left: 70%; z-index: -1;
-        }
-        @keyframes fall {
-          to { transform: translateY(100vh) rotate(360deg); }
-        }
-      `;
-    } else if (currentSeason === 'winter') {
-      const bg = currentTheme === 'light' ? '#f8f9fa' : '#282a2a';
-      seasonCSS = `
-        body { background: linear-gradient(135deg, ${bg} 0%, ${currentTheme === 'light' ? '#eef2f7' : '#383a3a'} 100%); }
-        body::before {
-          content: "❄️"; position: fixed; opacity: 0.1; font-size: 16px;
-          animation: snow 10s infinite linear; animation-delay: 0s;
-          top: -20px; left: 40%; z-index: -1;
-        }
-        body::after {
-          content: "❅"; position: fixed; opacity: 0.08; font-size: 14px;
-          animation: snow 12s infinite linear; animation-delay: 4s;
-          top: -18px; left: 80%; z-index: -1;
-        }
-        @keyframes snow {
-          to { transform: translateY(100vh) rotate(180deg); }
-        }
-      `;
-    }
-    document.getElementById('season-style').textContent = seasonCSS;
-
-    // 保存状态
-    localStorage.setItem('box_resonance_theme', currentTheme);
-    localStorage.setItem('box_resonance_season', currentSeason);
-    localStorage.setItem('box_resonance_font', currentFont);
-    document.getElementById('fontSelector').value = currentFont;
-  }
-
-  function getSeason() {
-    const month = new Date().getMonth() + 1;
-    if (month >= 3 && month <= 5) return 'spring';
-    if (month >= 6 && month <= 8) return 'summer';
-    if (month >= 9 && month <= 11) return 'autumn';
-    return 'winter';
-  }
-
-  function cycleSeason() {
-    const list = ['spring', 'summer', 'autumn', 'winter'];
-    const idx = list.indexOf(currentSeason);
-    currentSeason = list[(idx + 1) % 4];
-    applyTheme();
-  }
-
-  function toggleTheme() {
-    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-    applyTheme();
-  }
-
-  function changeFont() {
-    currentFont = document.getElementById('fontSelector').value;
-    applyTheme();
-  }
-
-  // 修复：切换侧边栏函数（适配PC/手机端）
-  function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebar-overlay');
-      const appGrid = document.getElementById('app-grid');
-      isSidebarVisible = !isSidebarVisible;
-      
-      if (isSidebarVisible) {
-          if (window.innerWidth <= 768) {
-              // 手机端：覆盖效果
-              sidebar.classList.add('shown');
-              sidebar.classList.remove('hidden');
-              overlay.style.display = 'block';
-          } else {
-              // PC端：滑出效果
-              appGrid.classList.remove('sidebar-hidden');
-          }
-      } else {
-          if (window.innerWidth <= 768) {
-              // 手机端：隐藏覆盖
-              sidebar.classList.remove('shown');
-              sidebar.classList.add('hidden');
-              overlay.style.display = 'none';
-          } else {
-              // PC端：收起滑动
-              appGrid.classList.add('sidebar-hidden');
-          }
-      }
-      localStorage.setItem('box_resonance_sidebar_visible', isSidebarVisible);
-  }
-
-  // 设置面板
-  function openSettings() {
-      document.getElementById('settings-panel').style.display = 'block';
-      document.getElementById('settings-overlay').style.display = 'block';
-  }
-  function closeSettings() {
-      document.getElementById('settings-panel').style.display = 'none';
-      document.getElementById('settings-overlay').style.display = 'none';
-  }
-
-  // 清空搜索
-  function clearSearch() {
-      document.getElementById('searchInput').value = '';
-      activeFilterTag = null;
-      updateTagButtons();
-      filterNotes();
-  }
-
-  // 波纹效果
-  function addRippleEffect(e) {
-    const button = e.currentTarget;
-    const ripple = document.createElement('span');
-    ripple.className = 'ripple';
-    const rect = button.getBoundingClientRect();
+// ========== 水波纹 ==========
+function addRippleEffect(element) {
+  if (element._rippleAdded) return;
+  element._rippleAdded = true;
+  element.addEventListener('click', function(e) {
+    const rect = element.getBoundingClientRect();
     const size = Math.max(rect.width, rect.height);
     const x = e.clientX - rect.left - size / 2;
     const y = e.clientY - rect.top - size / 2;
-    ripple.style.width = ripple.style.height = size + 'px';
-    ripple.style.left = x + 'px';
-    ripple.style.top = y + 'px';
-    button.appendChild(ripple);
+    let rippleColor = 'rgba(255, 255, 255, 0.6)';
+    if (document.body.getAttribute('skin') === 'dark') {
+      rippleColor = 'rgba(0, 0, 0, 0.4)';
+    }
+    const ripple = document.createElement('span');
+    ripple.classList.add('ripple');
+    ripple.style.width = ripple.style.height = `${size}px`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    ripple.style.background = rippleColor;
+    this.appendChild(ripple);
     setTimeout(() => ripple.remove(), 600);
+  });
+}
+
+// ========== 全局变量 ==========
+const STORAGE_KEY = 'box_resonance_v292';
+let currentUser = null;
+let currentNoteId = null;
+let isPreviewMode = false;
+let previewDebounce = null;
+let activeFilterTag = null;
+const SKINS = {
+  default: { bg: '#f9f7f2', text: '#333', card: '#fff', border: '#ddd', primary: '#8a7f70', light: '#e8e0d0' },
+  spring: { bg: '#f8f0e5', text: '#5a4a42', card: '#fff9f2', border: '#e0c9b8', primary: '#c27b7f', light: '#f0d8d6' },
+  summer: { bg: '#eef7f0', text: '#2c5f2d', card: '#f8fcf9', border: '#c2e0c9', primary: '#4a9162', light: '#d1e8d5' },
+  autumn: { bg: '#fef2e9', text: '#8b4513', card: '#fff8f0', border: '#e8c9a9', primary: '#d2691e', light: '#f5d8c4' },
+  winter: { bg: '#f0f4f8', text: '#2c3e50', card: '#ffffff', border: '#d1d8e0', primary: '#3498db', light: '#dae6f2' },
+  dark: { bg: '#1e1e20', text: '#e6e1d9', card: '#2a2a2d', border: '#444', primary: '#b8a99a', light: '#3a3a3f' },
+  glass: {
+    bg: 'linear-gradient(135deg, #f8fbff, #f0f4fa)',
+    text: '#2c3e50',
+    card: 'rgba(255, 255, 255, 0.7)',
+    border: 'rgba(200, 210, 230, 0.5)',
+    primary: '#5a8dde',
+    light: 'rgba(230, 240, 255, 0.6)'
+  }
+};
+
+// ========== ✅ 修复 Markdown 渲染 ==========
+function simpleMarkdownParse(text) {
+  if (!text) return '';
+  const lines = text.split('\n');
+  let html = '';
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trimEnd();
+    if (/^#{1,6} /.test(line)) {
+      const level = line.match(/^#+/)[0].length;
+      const content = line.replace(/^#{1,6} /, '');
+      html += `<h${level}>${escapeHtml(content)}</h${level}>\n`;
+    }
+    else if (/^---\s*$/.test(line)) {
+      html += '<hr>\n';
+    }
+    else if (line === '') {
+      html += '<br>\n';
+    }
+    else {
+      let processed = escapeHtml(line);
+      processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      processed = processed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      processed = processed.replace(/`(.*?)`/g, '<code>$1</code>');
+      processed = processed.replace(/~(.*?)~/g, '<del>$1</del>');
+      html += `<p>${processed}</p>\n`;
+    }
+  }
+  return html.trim();
+}
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// ========== 工具 ==========
+function getAllData() { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+function saveAllData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function getNotes() {
+  const d = getAllData();
+  if (!currentUser) return { notes: {}, order: [] };
+  return d[currentUser] || { notes: {}, order: [] };
+}
+function saveNotes(notesData) {
+  const d = getAllData();
+  d[currentUser] = notesData;
+  saveAllData(d);
+}
+function showStatus(msg) {
+  const el = document.getElementById('status');
+  if (el) {
+    el.textContent = msg;
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 2200);
+  }
+}
+function showSaveToast() {
+  const toast = document.getElementById('saveToast');
+  toast.classList.add('show');
+  setTimeout(() => { toast.classList.remove('show'); }, 1500);
+}
+function renderTags(tags) {
+  const el = document.getElementById('tagDisplay');
+  if (el) {
+    el.innerHTML = (tags || []).map(t =>
+      `<span style="display:inline-block;padding:6px 12px;margin:4px;background:var(--light);border-radius:999px;color:var(--text)">${t}</span>`
+    ).join('');
+  }
+}
+function getToday() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// ========== 核心功能 ==========
+function createNewNote() {
+  const title = prompt('请输入笔记标题（留空用日期）', getToday());
+  const final = title === null ? null : (title.trim() || getToday());
+  if (final === null) return;
+  const id = Date.now().toString();
+  const notesData = getNotes();
+  notesData.notes[id] = {
+    title: final,
+    content: '',
+    tags: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    pinned: false
+  };
+  notesData.order.unshift(id);
+  saveNotes(notesData);
+  loadNotes();
+  openNote(id);
+}
+function deleteNoteById(id) {
+  if (!id) return;
+  const d = getNotes();
+  delete d.notes[id];
+  d.order = d.order.filter(x => x !== id);
+  saveNotes(d);
+  if (currentNoteId === id) {
+    currentNoteId = d.order[0] || null;
+    if (currentNoteId) openNote(currentNoteId);
+    else {
+      document.getElementById('note-title').textContent = '未命名';
+      document.getElementById('noteContent').innerText = '';
+      document.getElementById('tagDisplay').innerHTML = '';
+    }
+  }
+  loadNotes();
+  showStatus('已删除');
+}
+function openNote(id) {
+  const d = getNotes();
+  const note = d.notes[id];
+  if (!note) return;
+  currentNoteId = id;
+  document.getElementById('note-title').textContent = note.title || '未命名';
+  document.getElementById('noteContent').innerText = note.content || '';
+  renderTags(note.tags || []);
+  if (isPreviewMode) {
+    document.getElementById('previewContent').innerHTML = simpleMarkdownParse(note.content || '');
+  }
+  highlightActiveNote();
+  updateDetailPanel(note);
+}
+function saveCurrentNote() {
+  const content = document.getElementById('noteContent').innerText;
+  const d = getNotes();
+  if (!currentNoteId) {
+    if (content.trim() === '') return;
+    const id = Date.now().toString();
+    d.notes[id] = {
+      title: getToday(),
+      content: content,
+      tags: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      pinned: false
+    };
+    d.order.unshift(id);
+    saveNotes(d);
+    loadNotes();
+    openNote(id);
+    showStatus('已保存');
+    return;
+  }
+  const note = d.notes[currentNoteId];
+  note.content = content;
+  note.updatedAt = new Date().toISOString();
+  saveNotes(d);
+  if (isPreviewMode) {
+    document.getElementById('previewContent').innerHTML = simpleMarkdownParse(content);
+  }
+  showSaveToast();
+  updateDetailPanel(note);
+}
+function updateDetailPanel(note) {
+  if (!note) return;
+  document.getElementById('detailTitle').textContent = note.title || '—';
+  document.getElementById('detailCreated').textContent = new Date(note.createdAt).toLocaleString();
+  document.getElementById('detailUpdated').textContent = new Date(note.updatedAt).toLocaleString();
+  document.getElementById('detailWords').textContent = (note.content || '').replace(/\s+/g, '').length;
+  document.getElementById('detailTags').textContent = (note.tags || []).join(' ');
+}
+function loadNotes() {
+  const d = getNotes();
+  const listEl = document.getElementById('noteList');
+  const allTags = new Set();
+  Object.values(d.notes).forEach(n => (n.tags || []).forEach(t => allTags.add(t)));
+  const tagFilter = document.getElementById('tagFilter');
+  if (tagFilter) {
+    tagFilter.innerHTML = '<strong class="muted">标签：</strong>';
+    allTags.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'tag-btn';
+      if (t === activeFilterTag) btn.classList.add('active');
+      btn.textContent = t;
+      btn.onclick = (ev) => {
+        ev.stopPropagation();
+        activeFilterTag = (t === activeFilterTag) ? null : t;
+        loadNotes();
+      };
+      tagFilter.appendChild(btn);
+    });
+  }
+  if (listEl) {
+    listEl.innerHTML = '';
+    const ordered = [...d.order];
+    ordered.sort((a, b) => {
+      const na = d.notes[a], nb = d.notes[b];
+      if (na.pinned && !nb.pinned) return -1;
+      if (nb.pinned && !na.pinned) return 1;
+      return 0;
+    });
+    ordered.forEach(id => {
+      const note = d.notes[id];
+      if (!note) return;
+      if (activeFilterTag && !(note.tags || []).includes(activeFilterTag)) return;
+      const li = document.createElement('li');
+      li.className = 'note-card' + (id === currentNoteId ? ' active' : '');
+      li.dataset.id = id;
+      li.innerHTML = `
+        <div style="font-weight:600;margin-bottom:6px;">${escapeHtml(note.title || '未命名')}</div>
+        <div class="muted">${new Date(note.updatedAt).toLocaleString()} • ${(note.tags || []).length} 标签</div>
+      `;
+      li.onclick = () => openNote(id);
+      let longPressTimer;
+      li.addEventListener('mousedown', (e) => {
+        if (e.button === 0) {
+          longPressTimer = setTimeout(() => {
+            const menu = document.createElement('div');
+            menu.className = 'delete-menu';
+            menu.innerHTML = `<button>🗑 删除</button>`;
+            li.appendChild(menu);
+            menu.querySelector('button').onclick = (ev) => {
+              ev.stopPropagation();
+              if (confirm('确认删除？')) {
+                deleteNoteById(id);
+                menu.remove();
+              }
+            };
+          }, 600);
+        }
+      });
+      const clearTimer = () => {
+        clearTimeout(longPressTimer);
+        const menu = li.querySelector('.delete-menu');
+        if (menu) menu.remove();
+      };
+      li.addEventListener('mouseup', clearTimer);
+      li.addEventListener('mouseleave', clearTimer);
+      li.addEventListener('click', clearTimer);
+      listEl.appendChild(li);
+    });
+  }
+  document.getElementById('noteCount').textContent = d.order.length;
+  if (!currentNoteId && d.order.length > 0) {
+    openNote(d.order[0]);
+  }
+}
+function highlightActiveNote() {
+  document.querySelectorAll('.note-card').forEach(el => el.classList.remove('active'));
+  const el = [...document.querySelectorAll('.note-card')].find(x => x.dataset.id === currentNoteId);
+  if (el) el.classList.add('active');
+}
+
+// ========== 其他功能 ==========
+function importNote() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.md,.txt';
+  input.onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      const content = ev.target.result;
+      const title = prompt('为导入的笔记设置标题：', f.name.replace(/\.(md|txt)$/i, ''));
+      if (!title) return;
+      const id = Date.now().toString();
+      const d = getNotes();
+      d.notes[id] = {
+        title: title,
+        content: content,
+        tags: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        pinned: false
+      };
+      d.order.unshift(id);
+      saveNotes(d);
+      loadNotes();
+      openNote(id);
+      showStatus('导入成功');
+    };
+    r.readAsText(f);
+  };
+  input.click();
+}
+
+// ========== 皮肤 & 字体 ==========
+function applySkin(skinName) {
+  const skin = SKINS[skinName] || SKINS.default;
+  if (skinName === 'glass') {
+    document.body.style.background = skin.bg;
+  } else {
+    document.documentElement.style.setProperty('--bg', skin.bg);
+    document.body.style.background = '';
+  }
+  document.documentElement.style.setProperty('--text', skin.text);
+  document.documentElement.style.setProperty('--card', skin.card);
+  document.documentElement.style.setProperty('--border', skin.border);
+  document.documentElement.style.setProperty('--primary', skin.primary);
+  document.documentElement.style.setProperty('--light', skin.light);
+  document.body.setAttribute('skin', skinName);
+  localStorage.setItem('box_resonance_skin', skinName);
+}
+function applyFont(fontFamily) {
+  document.getElementById('dynamic-font').textContent = `body, #noteContent { font-family: ${fontFamily} !important; }`;
+  const noteContent = document.getElementById('noteContent');
+  if (noteContent) {
+    noteContent.style.fontFamily = fontFamily;
+  }
+  localStorage.setItem('box_resonance_font', fontFamily);
+}
+
+// ========== 事件绑定 ==========
+document.addEventListener('DOMContentLoaded', () => {
+  const savedSkin = localStorage.getItem('box_resonance_skin');
+  const savedFont = localStorage.getItem('box_resonance_font');
+  applySkin(savedSkin || 'default');
+  applyFont(savedFont || "'Source Han Serif SC', serif");
+
+  const savedUser = localStorage.getItem('box_resonance_user');
+  if (savedUser) {
+    currentUser = savedUser;
+    document.getElementById('profileName').textContent = savedUser;
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app-container').style.display = 'block';
+  } else {
+    document.getElementById('login').style.display = 'block';
+    document.getElementById('app-container').style.display = 'none';
   }
 
-  // 为所有按钮添加波纹效果，使用事件委托避免重复绑定
-  document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('btn')) {
-      addRippleEffect(e);
+  setTimeout(() => {
+    document.querySelectorAll('.ripple-btn').forEach(addRippleEffect);
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('.ripple-btn').forEach(btn => {
+        if (!btn._rippleAdded) {
+          addRippleEffect(btn);
+          btn._rippleAdded = true;
+        }
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }, 100);
+
+  document.getElementById('dirBtn').onclick = () => {
+    document.getElementById('sidebar').classList.add('shown');
+    document.getElementById('sidebarBackdrop').classList.add('active');
+  };
+  document.getElementById('detailBtn').onclick = () => {
+    document.getElementById('detailPanel').classList.add('shown');
+    document.getElementById('detailBackdrop').classList.add('active');
+  };
+  document.getElementById('closeDetail').onclick = () => {
+    document.getElementById('detailPanel').classList.remove('shown');
+    document.getElementById('detailBackdrop').classList.remove('active');
+  };
+  document.getElementById('sidebarBackdrop').onclick = (e) => { e.stopPropagation(); document.getElementById('sidebar').classList.remove('shown'); document.getElementById('sidebarBackdrop').classList.remove('active'); };
+  document.getElementById('detailBackdrop').onclick = (e) => { e.stopPropagation(); document.getElementById('detailPanel').classList.remove('shown'); document.getElementById('detailBackdrop').classList.remove('active'); };
+  document.getElementById('sidebar').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('detailPanel').addEventListener('click', e => e.stopPropagation());
+
+  document.getElementById('note-title').onclick = () => {
+    const el = document.getElementById('note-title');
+    if (el.classList.contains('editing')) return;
+    const original = el.textContent;
+    el.classList.add('editing');
+    el.contentEditable = true;
+    el.focus();
+    const save = () => {
+      el.classList.remove('editing');
+      el.contentEditable = false;
+      const newTitle = el.textContent.trim() || '未命名';
+      if (newTitle !== original && currentNoteId) {
+        const d = getNotes();
+        d.notes[currentNoteId].title = newTitle;
+        d.notes[currentNoteId].updatedAt = new Date().toISOString();
+        saveNotes(d);
+        loadNotes();
+        showStatus('标题已更新');
+      }
+    };
+    el.addEventListener('blur', save);
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+  };
+
+  const noteContent = document.getElementById('noteContent');
+  const previewContent = document.getElementById('previewContent');
+  function updatePreview() {
+    if (isPreviewMode) {
+      previewContent.innerHTML = simpleMarkdownParse(noteContent.innerText);
     }
+  }
+  noteContent.addEventListener('input', () => {
+    clearTimeout(previewDebounce);
+    previewDebounce = setTimeout(() => {
+      updatePreview();
+      saveCurrentNote();
+    }, 300);
   });
 
-  // 登录
-  function login() {
-    const name = document.getElementById('username').value?.trim();
+  let previewToggleBtn = document.createElement('button');
+  previewToggleBtn.className = 'ripple-btn';
+  previewToggleBtn.textContent = '👁 预览';
+  previewToggleBtn.onclick = () => {
+    isPreviewMode = !isPreviewMode;
+    if (isPreviewMode) {
+      previewContent.style.display = 'block';
+      noteContent.style.display = 'none';
+      previewToggleBtn.textContent = '📝 编辑';
+    } else {
+      previewContent.style.display = 'none';
+      noteContent.style.display = 'block';
+      previewToggleBtn.textContent = '👁 预览';
+    }
+    if (isPreviewMode) updatePreview();
+  };
+  document.querySelector('#editor').insertBefore(previewToggleBtn, document.querySelector('#writing-area'));
+
+  document.getElementById('tagInput').addEventListener('blur', () => {
+    const input = document.getElementById('tagInput');
+    const v = input.value.trim();
+    if (!v || !currentNoteId) return;
+    const tags = v.split(/\s+/).filter(t => t.startsWith('#')).map(t => t.trim());
+    const d = getNotes();
+    const note = d.notes[currentNoteId];
+    if (!note) return;
+    note.tags = [...new Set([...(note.tags || []), ...tags])];
+    note.updatedAt = new Date().toISOString();
+    saveNotes(d);
+    renderTags(note.tags);
+    input.value = '';
+    loadNotes();
+  });
+
+  document.getElementById('newNoteBtn').onclick = createNewNote;
+  document.getElementById('saveBtn').onclick = saveCurrentNote;
+  document.getElementById('importBtn').onclick = importNote;
+  document.getElementById('exportMdBtn').onclick = () => {
+    if (!currentNoteId) { alert('无笔记'); return; }
+    const d = getNotes();
+    const n = d.notes[currentNoteId];
+    const blob = new Blob([n.content || ''], { type: 'text/markdown' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (n.title || '未命名') + '.md';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+  document.getElementById('copyBtn').onclick = () => {
+    const text = document.getElementById('noteContent').innerText;
+    navigator.clipboard.writeText(text).then(() => showStatus('已复制'));
+  };
+  document.getElementById('logoutBtn').onclick = () => {
+    if (confirm('退出？')) {
+      localStorage.removeItem('box_resonance_user');
+      localStorage.removeItem('box_resonance_skin');
+      localStorage.removeItem('box_resonance_font');
+      location.reload();
+    }
+  };
+  document.getElementById('skinBtn').onclick = () => {
+    document.getElementById('skinModal').style.opacity = '1';
+    document.getElementById('skinModal').style.visibility = 'visible';
+    document.getElementById('skinBackdrop').classList.add('active');
+  };
+  document.getElementById('fontBtn').onclick = () => {
+    document.getElementById('fontModal').style.opacity = '1';
+    document.getElementById('fontModal').style.visibility = 'visible';
+    document.getElementById('fontBackdrop').classList.add('active');
+  };
+  document.getElementById('skinBackdrop').onclick = () => {
+    document.getElementById('skinModal').style.opacity = '0';
+    document.getElementById('skinModal').style.visibility = 'hidden';
+    document.getElementById('skinBackdrop').classList.remove('active');
+  };
+  document.getElementById('fontBackdrop').onclick = () => {
+    document.getElementById('fontModal').style.opacity = '0';
+    document.getElementById('fontModal').style.visibility = 'hidden';
+    document.getElementById('fontBackdrop').classList.remove('active');
+  };
+
+  document.querySelectorAll('.skin-opt').forEach(el => {
+    el.onclick = () => {
+      const skin = el.dataset.skin;
+      applySkin(skin);
+      document.getElementById('skinModal').style.opacity = '0';
+      document.getElementById('skinModal').style.visibility = 'hidden';
+      document.getElementById('skinBackdrop').classList.remove('active');
+    };
+  });
+  document.querySelectorAll('.font-opt').forEach(el => {
+    el.onclick = () => {
+      const font = el.dataset.font;
+      applyFont(font);
+      document.getElementById('fontModal').style.opacity = '0';
+      document.getElementById('fontModal').style.visibility = 'hidden';
+      document.getElementById('fontBackdrop').classList.remove('active');
+    };
+  });
+
+  document.getElementById('loginBtn').onclick = () => {
+    const name = document.getElementById('username').value.trim();
     if (!name) return alert('请输入名字');
     currentUser = name;
     localStorage.setItem('box_resonance_user', name);
-    document.getElementById('userName').textContent = name;
     document.getElementById('profileName').textContent = name;
-    showApp();
-  }
-
-  function checkLogin() {
-    const saved = localStorage.getItem('box_resonance_user');
-    if (saved) {
-      currentUser = saved;
-      // 恢复侧边栏状态
-      const savedSidebar = localStorage.getItem('box_resonance_sidebar_visible');
-      isSidebarVisible = savedSidebar === 'true';
-      if (isSidebarVisible) {
-          if (window.innerWidth > 768) {
-              document.getElementById('app-grid').classList.remove('sidebar-hidden');
-          } else {
-              document.getElementById('sidebar').classList.add('shown');
-              document.getElementById('sidebar').classList.remove('hidden');
-          }
-      }
-      document.getElementById('userName').textContent = saved;
-      document.getElementById('profileName').textContent = saved;
-      showApp();
-    } else {
-      document.getElementById('login').style.display = 'block';
-    }
-  }
-
-  function showApp() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('app-container').style.display = 'block';
     loadNotes();
-  }
+  };
 
-  // 笔记数据管理
-  function getNotes() {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    return data[currentUser] || { notes: {}, order: [] };
-  }
-
-  function saveNotes(notesData) {
-    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    data[currentUser] = notesData;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-
-  // 笔记操作
-  function createNewNote() {
-    const title = prompt('请输入笔记标题（留空则使用日期）：', getTodayDate());
-    const finalTitle = title !== null ? (title.trim() || getTodayDate()) : getTodayDate();
-    const id = Date.now().toString();
-    const notesData = getNotes();
-    notesData.notes[id] = {
-      title: finalTitle,
-      content: '',
-      tags: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    notesData.order.unshift(id);
-    saveNotes(notesData);
-    loadNotes();
-    openNote(id);
-  }
-
-  // 新增：直接删除当前笔记的函数
-  function deleteCurrentNote() {
-    if (!currentNoteId) return;
-    deleteNote(currentNoteId);
-  }
-
-  function deleteNote(id) {
-    if (!confirm('确定要删除这篇笔记吗？此操作无法撤销。')) return;
-    const notesData = getNotes();
-    delete notesData.notes[id];
-    notesData.order = notesData.order.filter(noteId => noteId !== id);
-    saveNotes(notesData);
-    if (currentNoteId === id) {
-        currentNoteId = notesData.order[0] || null;
-        if (currentNoteId) {
-          openNote(currentNoteId);
-        } else {
-            document.getElementById('currentTitle').textContent = '未命名';
-            document.getElementById('noteContent').value = '';
-            document.getElementById('tagDisplay').innerHTML = '';
-        }
-    }
-    loadNotes();
-    showStatus('🗑️ 笔记已删除');
-  }
-
-  function renameCurrentNote() {
-    if (!currentNoteId) return;
-    const notesData = getNotes();
-    const note = notesData.notes[currentNoteId];
-    const newTitle = prompt('重命名笔记：', note.title);
-    if (newTitle !== null) {
-      note.title = newTitle.trim() || '未命名';
-      note.updatedAt = new Date().toISOString();
-      saveNotes(notesData);
-      loadNotes();
-      openNote(currentNoteId);
-    }
-  }
-
-  function openNote(id) {
-    const notesData = getNotes();
-    const note = notesData.notes[id];
-    if (!note) return;
-
-    currentNoteId = id;
-    document.getElementById('currentTitle').textContent = note.title || '未命名';
-    document.getElementById('noteContent').value = note.content || '';
-    renderTags(note.tags || []);
-    // 更新预览
-    if (isPreviewMode) {
-        updatePreview(note.content);
-    }
-    document.querySelectorAll('.note-card').forEach(el => el.classList.remove('active'));
-    const activeEl = [...document.querySelectorAll('.note-card')].find(el => el.dataset.id === id);
-    if (activeEl) activeEl.classList.add('active');
-
-    // 在手机端打开笔记后自动收起侧边栏
-    if (window.innerWidth <= 768 && isSidebarVisible) {
-        toggleSidebar();
-    }
-  }
-
-  function saveCurrentNote() {
-    const content = document.getElementById('noteContent').value;
-    if (!currentNoteId) {
-        if (content.trim() === '') return;
-        const title = getTodayDate();
-        const id = Date.now().toString();
-        const notesData = getNotes();
-        notesData.notes[id] = {
-          title: title,
-          content: content,
-          tags: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        notesData.order.unshift(id);
-        saveNotes(notesData);
-        loadNotes();
-        openNote(id);
-        showStatus('✅ 已保存到新笔记');
-        return;
-    }
-
-    const notesData = getNotes();
-    const note = notesData.notes[currentNoteId];
-    note.content = content;
-    note.updatedAt = new Date().toISOString();
-    saveNotes(notesData);
-    if (isPreviewMode) {
-        updatePreview(note.content);
-    }
-    const now = new Date();
-    const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-    showStatus(`✅ 已保存 (${timeStr})`);
-  }
-
-  // Markdown 预览
-  function updatePreview(content) {
-    if (!isPreviewMode) return;
-    const html = simpleMarkdownParse(content || '');
-    document.getElementById('previewContent').innerHTML = html;
-  }
-
-  function togglePreview() {
-    isPreviewMode = !isPreviewMode;
-    const contentEl = document.getElementById('noteContent');
-    const previewEl = document.getElementById('previewContent');
-    const toggleBtn = document.getElementById('previewToggle');
-    if (isPreviewMode) {
-        const content = contentEl.value;
-        updatePreview(content);
-        contentEl.style.display = 'none';
-        previewEl.style.display = 'block';
-        toggleBtn.textContent = '📝 编辑';
-    } else {
-        contentEl.style.display = 'block';
-        previewEl.style.display = 'none';
-        toggleBtn.textContent = '👁️ 预览';
-    }
-  }
-
-  // 标签系统
-  function addTags() {
-    if (!currentNoteId) return;
-    const input = document.getElementById('tagInput');
-    const tags = input.value.split(/\s+/).filter(t => t.trim().startsWith('#')).map(t => t.trim());
-    if (tags.length === 0) return;
-    const notesData = getNotes();
-    notesData.notes[currentNoteId].tags = [...new Set(tags)];
-    saveNotes(notesData);
-    renderTags(tags);
-    input.value = '';
-    loadNotes();
-  }
-
-  function renderTags(tags) {
-    const el = document.getElementById('tagDisplay');
-    el.innerHTML = tags.map(tag => `<span class="tag-badge">${tag}</span>`).join('');
-  }
-
-  // 搜索与筛选
-  function filterNotes() {
-    loadNotes();
-  }
-
-  // 导出
-  function exportCurrentNote(format) {
-    const content = document.getElementById('noteContent').value;
-    const title = document.getElementById('currentTitle').textContent;
-    let blob, filename;
-    if (format === 'md') {
-      blob = new Blob([content], { type: 'text/markdown' });
-      filename = (title || '未命名') + '.md';
-    } else {
-      blob = new Blob([content], { type: 'text/plain' });
-      filename = (title || '未命名') + '.txt';
-    }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function exportAllNotes() {
-    const notesData = getNotes();
-    let text = `# 匣之回响 - 全部笔记导出\n\n`;
-    notesData.order.forEach(id => {
-      const note = notesData.notes[id];
-      text += `## ${note.title || '未命名'}\n`;
-      if (note.tags?.length) text += `标签: ${note.tags.join(' ')}\n\n`;
-      text += `${note.content}\n\n---\n\n`;
-    });
-    const blob = new Blob([text], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = '匣之回响_全部笔记.md';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  // 导入功能
-  function importNotes() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.md,.txt';
-    input.onchange = function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result;
-            const title = prompt('为导入的笔记设置标题：', file.name.replace(/\.(md|txt)$/, ''));
-            if (!title) return;
-            const id = Date.now().toString();
-            const notesData = getNotes();
-            notesData.notes[id] = {
-              title: title,
-              content: content,
-              tags: [],
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            };
-            notesData.order.unshift(id);
-            saveNotes(notesData);
-            loadNotes();
-            openNote(id);
-            showStatus(`✅ 已导入笔记：${title}`);
-        };
-        reader.readAsText(file);
-    };
-    input.click();
-  }
-
-  // 工具函数
-  function getTodayDate() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  }
-
-  // 更新标签按钮状态
-  function updateTagButtons() {
-    const allTagButtons = document.querySelectorAll('.tag-btn');
-    allTagButtons.forEach(btn => {
-        if (btn.textContent === activeFilterTag) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-  }
-
-  function loadNotes() {
-    const notesData = getNotes();
-    const listEl = document.getElementById('noteList');
-    const search = document.getElementById('searchInput').value.toLowerCase();
-
-    // 收集所有标签
-    const allTags = new Set();
-    Object.values(notesData.notes).forEach(note => {
-      (note.tags || []).forEach(tag => allTags.add(tag));
-    });
-
-    // 渲染标签筛选
-    const tagFilterEl = document.getElementById('tagFilter');
-    tagFilterEl.innerHTML = '<div style="margin-bottom:0.5rem;"><strong>标签筛选：</strong></div>';
-    allTags.forEach(tag => {
-      const btn = document.createElement('button');
-      btn.className = 'tag-btn';
-      btn.textContent = tag;
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        if (activeFilterTag === tag) {
-            document.getElementById('searchInput').value = '';
-            activeFilterTag = null;
-        } else {
-            document.getElementById('searchInput').value = tag;
-            activeFilterTag = tag;
-        }
-        updateTagButtons();
-        filterNotes();
-      };
-      tagFilterEl.appendChild(btn);
-    });
-
-    // 更新当前标签按钮状态
-    updateTagButtons();
-
-    // 渲染笔记列表
-    listEl.innerHTML = '';
-    notesData.order.forEach(id => {
-      const note = notesData.notes[id];
-      if (!note) return;
-      const match = !search ||
-        note.title.toLowerCase().includes(search) ||
-        note.content.toLowerCase().includes(search) ||
-        (note.tags || []).some(t => t.includes(search));
-      if (!match) return;
-
-      const li = document.createElement('li');
-      li.className = 'note-card ' + (id === currentNoteId ? 'active' : '');
-      li.dataset.id = id;
-
-      const titleDiv = document.createElement('div');
-      titleDiv.className = 'note-card-title';
-      titleDiv.textContent = note.title || '未命名';
-
-      const metaDiv = document.createElement('div');
-      metaDiv.className = 'note-card-meta';
-      metaDiv.innerHTML = `
-        <span>${new Date(note.createdAt).toLocaleDateString()}</span>
-        <span>${(note.tags || []).length} 标签</span>
-      `;
-
-      li.appendChild(titleDiv);
-      li.appendChild(metaDiv);
-      li.onclick = () => openNote(id);
-
-      listEl.appendChild(li);
-    });
-
-    if (!currentNoteId && notesData.order.length > 0) {
-      openNote(notesData.order[0]);
-    }
-
-    // 更新侧边栏统计
-    document.getElementById('noteCount').textContent = notesData.order.length;
-  }
-
-  function logout() {
-    currentUser = null;
-    currentNoteId = null;
-    isPreviewMode = false;
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('login').style.display = 'block';
-    document.getElementById('username').value = '';
-    // 清空侧边栏统计
-    document.getElementById('profileName').textContent = '';
-    document.getElementById('noteCount').textContent = '0';
-  }
-
-  function showStatus(msg) {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    setTimeout(() => el.textContent = '', 2000);
-  }
-
-  // 自动保存 + 实时预览
-  document.addEventListener('DOMContentLoaded', () => {
-    const editor = document.getElementById('noteContent');
-    if (editor) {
-      editor.addEventListener('input', () => {
-        if (currentNoteId || editor.value.trim() !== '') {
-            clearTimeout(previewTimeout);
-            previewTimeout = setTimeout(() => {
-                saveCurrentNote();
-                if (isPreviewMode) {
-                    updatePreview(editor.value);
-                }
-            }, 300);
-        }
-      });
-    }
-  });
-
-  // 初始化
-  window.onload = () => {
-    currentTheme = localStorage.getItem('box_resonance_theme') || 'light';
-    currentSeason = localStorage.getItem('box_resonance_season') || getSeason();
-    currentFont = localStorage.getItem('box_resonance_font') || 'Source Han Serif SC';
-    applyTheme();
-
+  window.addEventListener('load', () => {
     setTimeout(() => {
       document.getElementById('loader').style.opacity = '0';
       setTimeout(() => {
         document.getElementById('loader').style.display = 'none';
-        checkLogin();
-      }, 400);
-    }, 800);
-  };
+        if (currentUser) {
+          document.getElementById('app-container').style.display = 'block';
+          loadNotes();
+        }
+      }, 600);
+    }, 1200);
+  });
+});
 </script>
-
 </body>
 </html>
